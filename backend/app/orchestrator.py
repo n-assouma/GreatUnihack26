@@ -61,6 +61,16 @@ def run_turn(state: SessionState, message: str) -> TurnResult:
     # --- the phase machine, before the LLM, so mode-switching is deterministic (F12) ---
     advance_phase(state, message)
 
+    if verdict.reask_position and not llm.available():
+        # Repeating the step they are already stuck on is the one answer that is no
+        # use here, and it is what the template path would otherwise give.
+        reply = (
+            "Let's get you back on track. What can you see around you — a lift, "
+            "a door, or a room number?"
+        )
+        state.remember("assistant", reply)
+        return TurnResult(reply, state.active_agent, events, used_llm=False)
+
     if not llm.available():
         return _template_turn(state, message, events)
 

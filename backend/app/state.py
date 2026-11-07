@@ -66,7 +66,12 @@ class SessionState:
 
     # conversation + safety
     history: list[dict] = field(default_factory=list)  # [{"role","content"}], text turns only
+    # lost_count counts every "we don't know where they are" signal, including a
+    # location we could not pin down. said_lost_count counts only the user actually
+    # telling us they are lost — escalation needs that, because failing to resolve
+    # "by the lifts" twice is ambiguity, not distress.
     lost_count: int = 0
+    said_lost_count: int = 0
     escalation: dict | None = None
     escalation_log: list[dict] = field(default_factory=list)
     reminded_class_ids: set[str] = field(default_factory=set)
