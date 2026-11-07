@@ -339,7 +339,17 @@ def tool_guardrail(
 
 _ROOM_CODE = re.compile(r"\b\d[A-Z]{1,2}\.\d{2,3}\b")
 _BUS_LINE = re.compile(r"\b(?:bus|route|service)\s+(\d{1,3}[A-Z]?)\b", re.IGNORECASE)
-_STAIRS = re.compile(r"\bstair(?:s|case|well)?\b", re.IGNORECASE)
+# What F5 must stop is *being told to use* stairs. Naming a stairwell as a landmark
+# is fine and sometimes necessary: "Core 2 stairwell" is a real place in this
+# building, and a wheelchair user saying "I'm near the stairs" is telling us where
+# they are. Blocking the bare word threw away legitimate clarifying questions
+# ("Core 1, Core 2 or Core 3 stairwell?") and left the conversation stuck.
+_STAIRS_INSTRUCTION = re.compile(
+    r"\b(?:take|use|using|climb|via|go|head|walk|continue|carry\s+on)"
+    r"(?:\s+\w+){0,2}?\s+(?:the\s+|a\s+)?stair",
+    re.IGNORECASE,
+)
+_STAIRS_ANY = re.compile(r"\bstair(?:s|case|well|wells)?\b", re.IGNORECASE)
 
 
 def _allowed_facts(state: SessionState) -> set[str]:
@@ -388,7 +398,7 @@ def output_guardrail(
         )
 
     # F5: never tell someone who cannot use stairs to take the stairs.
-    if state.no_stairs and _STAIRS.search(reply):
+    if state.no_stairs and _STAIRS_INSTRUCTION.search(reply):
         events.append(
             _event(
                 "output",
@@ -398,8 +408,25 @@ def output_guardrail(
             )
         )
         reply = fallback or "Take the lift — I'll guide you to the nearest one."
-        if _STAIRS.search(reply):  # the fallback mentioned them too
+        if _STAIRS_ANY.search(reply):  # the fallback mentioned them too
             reply = "Take the lift — I'll guide you to the nearest one."
+
+    # The hard half of F5, independent of wording: if a no-stairs user somehow ended
+    # up with a route that climbs stairs, the reply must not stand whatever it says.
+    if state.no_stairs and state.indoor_route:
+        steps = state.indoor_route.get("steps") or []
+        if any(step.get("via") == "stairs" for step in steps):
+            events.append(
+                _event(
+                    "output",
+                    "no_stairs_enforced",
+                    "modified",
+                    "The planned route used stairs for a user who cannot: refused it.",
+                )
+            )
+            reply = (
+                "Let me find you a step-free way round — I'll route you to the lift instead."
+            )
 
     # PLAN §4.5: no room codes or transport lines that no tool returned.
     allowed = _allowed_facts(state)
