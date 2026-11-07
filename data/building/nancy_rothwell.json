@@ -226,6 +226,68 @@
    ]
   },
   {
+   "id": "f0_top_ga019",
+   "floor": 0,
+   "x": 470,
+   "y": 628,
+   "type": "junction",
+   "label": "Ground floor corridor by GA.019",
+   "aliases": []
+  },
+  {
+   "id": "f0_ga019_door",
+   "floor": 0,
+   "x": 470,
+   "y": 662,
+   "type": "junction",
+   "label": "Door of GA.019",
+   "aliases": []
+  },
+  {
+   "id": "GA.019",
+   "floor": 0,
+   "x": 470,
+   "y": 695,
+   "type": "room",
+   "label": "Room GA.019",
+   "aliases": [
+    "ga.019",
+    "ga 019",
+    "room ga019"
+   ]
+  },
+  {
+   "id": "f0_ga035_top",
+   "floor": 0,
+   "x": 905,
+   "y": 655,
+   "type": "junction",
+   "label": "Ground floor passage beside the Core 3 lifts",
+   "aliases": []
+  },
+  {
+   "id": "f0_ga035_door",
+   "floor": 0,
+   "x": 905,
+   "y": 835,
+   "type": "junction",
+   "label": "Door of GA.035",
+   "aliases": []
+  },
+  {
+   "id": "GA.035",
+   "floor": 0,
+   "x": 884,
+   "y": 858,
+   "type": "room",
+   "label": "Room GA.035",
+   "aliases": [
+    "ga.035",
+    "ga 035",
+    "room ga035"
+   ]
+  },
+  {
    "id": "f1_corr_core1",
    "floor": 1,
    "x": 357,
@@ -799,6 +861,13 @@
   },
   {
    "from": "f0_top_core1",
+   "to": "f0_top_ga019",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_ga019",
    "to": "f0_top_core2",
    "type": "corridor",
    "accessible": true,
@@ -892,6 +961,41 @@
    "from": "f0_south_hall",
    "to": "f0_cafe_collab",
    "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_ga019",
+   "to": "f0_ga019_door",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_ga019_door",
+   "to": "GA.019",
+   "type": "door",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_core3",
+   "to": "f0_ga035_top",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_ga035_top",
+   "to": "f0_ga035_door",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_ga035_door",
+   "to": "GA.035",
+   "type": "door",
    "accessible": true,
    "keycard": false
   },

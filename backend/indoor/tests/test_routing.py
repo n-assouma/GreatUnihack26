@@ -148,3 +148,14 @@ def test_theatre_b_and_floor_2_landmarks_reachable(entrance, accessible):
 def test_locate_floor_2_landmarks():
     assert api.locate("I'm at the connect cafe")["node_id"] == "f2_cafe_connect"
     assert api.locate("near the computer cluster")["node_id"] == "f2_computer_cluster"
+
+
+@pytest.mark.parametrize("entrance", ENTRANCES)
+@pytest.mark.parametrize("accessible", [True, False])
+@pytest.mark.parametrize("room", ["GA.019", "GA.035"])
+def test_ground_floor_rooms_reachable_and_step_free(entrance, room, accessible):
+    assert api.room_exists(room)
+    r = api.get_indoor_route(entrance, room, accessible)
+    assert r["steps"][-1]["to_node"] == room
+    assert [seg["floor"] for seg in r["segments"]] == [0]
+    assert not any(s["via"] for s in r["steps"])  # same floor: no lift or stairs
