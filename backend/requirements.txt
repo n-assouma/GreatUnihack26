@@ -4,6 +4,10 @@ pydantic
 python-dotenv
 httpx
 litellm
+# litellm imports mcp lazily, inside completion(). Without it every LLM call dies
+# at call time with ModuleNotFoundError and we fall back to templates, so pinning it
+# here is what keeps the agents actually running. Found by A3 on a fresh venv.
+mcp
 icalendar
 networkx
 Pillow

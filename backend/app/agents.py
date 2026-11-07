@@ -133,8 +133,8 @@ def state_summary(state: SessionState) -> str:
     if state.visual_impairment:
         lines.append("- ACCESSIBILITY: visually impaired. Describe landmarks and distances.")
 
-    if state.transport_pref:
-        lines.append(f"- Travelling by: {state.transport_pref}")
+    if state.transport:
+        lines.append(f"- Travelling by: {state.transport}")
     if state.outdoor_route:
         lines.append(
             f"- Journey planned: {state.outdoor_route['summary']} "

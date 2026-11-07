@@ -395,6 +395,91 @@ def test_walking_steps_are_folded_into_meaningful_legs():
     assert "Nancy Rothwell" in legs[2]["instruction"]  # last walk names the destination
 
 
+def test_litellm_lazy_dependencies_are_installed():
+    """Regression: litellm imports `mcp` inside completion(), so a missing one is
+    invisible until the first real LLM call — every call died with
+    ModuleNotFoundError and we silently served templates. Nothing in this suite
+    invokes litellm (MOCK_LLM=1, and the scripted tests patch llm.chat), so the
+    dependency has to be asserted directly."""
+    assert llm.missing_dependencies() == [], (
+        "missing litellm runtime deps; run pip install -r requirements.txt"
+    )
+
+
+def test_health_warns_about_things_that_cannot_work(monkeypatch):
+    """Reporting a credential as working when it provably cannot defeats the point
+    of a health endpoint."""
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "3b80291eb0abd7ef" * 4)  # a key ID
+    monkeypatch.setenv("ELEVENLABS_VOICE_ID", "Cx2PEJFdr8frSuUVB6yZ")
+
+    body = client.get("/api/health").json()
+    assert body["mocks"]["tts"] == "mock"
+    assert any("sk_" in warning for warning in body["warnings"]), body["warnings"]
+    assert any("templates" in warning for warning in body["warnings"])  # no LLM key
+
+
+@pytest.mark.parametrize(
+    "message,expected",
+    [
+        ("I will walk", "walk"),
+        ("I'll take the bus", "bus"),
+        ("let's run", "run"),
+        ("I'm running late", None),  # "running late" is not a travel choice
+        ("the buses are busy", "bus"),
+        ("what is my next class?", None),
+    ],
+)
+def test_transport_named_in_a_message_is_detected_by_whole_word(message, expected):
+    from app.state import transport_in_message
+
+    assert transport_in_message(message) == expected
+
+
+def test_what_the_user_says_beats_a_stale_settings_preference():
+    """A1's bug: a judge's browser with an old 'Run' setting got a Run route even
+    after tapping 'I'll take the bus'."""
+    home = {"lat": 53.445273, "lng": -2.215431, "demo_time": "2026-11-09T09:30:00+00:00"}
+    with_run = {**PLAIN_CONTEXT, **home, "transport_pref": "run"}
+
+    walked = post_chat("s-mode", "I will walk", with_run)
+    assert walked["ui"]["outdoor_route"]["mode"] == "walk", walked["reply"]
+
+    # Same session, Settings still says run: what they say still wins.
+    bussed = post_chat("s-mode", "I'll take the bus", with_run)
+    assert bussed["ui"]["outdoor_route"]["mode"] == "bus", bussed["reply"]
+
+
+def test_the_settings_preference_is_the_default_when_no_mode_is_named():
+    home = {"lat": 53.445273, "lng": -2.215431, "demo_time": "2026-11-09T09:30:00+00:00"}
+    body = post_chat(
+        "s-default", "how do I get to my class?", {**PLAIN_CONTEXT, **home, "transport_pref": "run"}
+    )
+    assert body["ui"]["outdoor_route"]["mode"] == "run"
+
+
+def test_changing_settings_overrides_what_was_said_earlier():
+    """The flip side: a deliberate Settings change must still take effect."""
+    home = {"lat": 53.445273, "lng": -2.215431, "demo_time": "2026-11-09T09:30:00+00:00"}
+    post_chat("s-switch", "I'll take the bus", {**PLAIN_CONTEXT, **home, "transport_pref": "run"})
+
+    # Settings changed run -> walk; no mode named in this message.
+    body = post_chat("s-switch", "what's the plan?", {**PLAIN_CONTEXT, **home, "transport_pref": "walk"})
+    assert body["ui"]["outdoor_route"]["mode"] == "walk", body["reply"]
+
+
+def test_moving_on_from_an_escalation_card_does_not_strand_the_session():
+    """A3 saw one wrong escalation cascade into every later step failing, because
+    only /api/escalation/confirm could leave the escalated phase."""
+    inside = {**PLAIN_CONTEXT, "lat": BUILDING_LAT, "lng": BUILDING_LNG}
+    post_chat("s-strand", "I need help, can I talk to someone?", inside)
+    assert client.get("/api/session/s-strand").json()["phase"] == "escalated"
+
+    body = post_chat("s-strand", "I am at the East entrance", inside)
+    assert body["phase"] == "indoor", body
+    assert body["ui"]["indoor_route"] is not None
+    assert body["ui"]["escalation"] is None
+
+
 def test_tts_returns_503_without_a_key():
     response = client.post("/api/tts", json={"text": "hello"})
     assert response.status_code == 503

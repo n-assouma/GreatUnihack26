@@ -8,6 +8,7 @@ Endpoints follow docs/CONTRACTS.md §3 exactly.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -114,6 +115,36 @@ def _response(
     )
 
 
+def _warnings() -> list[str]:
+    """Things that look configured but cannot work. Reporting a credential as
+    working when it provably is not defeats the point of a health endpoint."""
+    notes: list[str] = []
+
+    missing = llm.missing_dependencies()
+    if missing:
+        notes.append(
+            f"litellm needs {', '.join(missing)} at call time and it is not installed, so "
+            f"every LLM call will fail and replies will come from templates. "
+            f"Fix: pip install -r requirements.txt"
+        )
+    if llm.available() and llm.status() == "degraded" and not missing:
+        notes.append("An LLM call has failed this run; replies are falling back to templates.")
+    if not llm.available():
+        notes.append("No LLM configured (MOCK_LLM=1 or no API key): replies come from templates.")
+
+    key = os.getenv("ELEVENLABS_API_KEY", "").strip()
+    if key and not key.startswith(tts.KEY_PREFIX):
+        notes.append(
+            "ELEVENLABS_API_KEY does not start with 'sk_', so it is an API key ID rather than "
+            "an API key and voice cannot work. Create or rotate a key in ElevenLabs."
+        )
+    if not os.getenv("GOOGLE_MAPS_API_KEY"):
+        notes.append("No GOOGLE_MAPS_API_KEY: the bus leg will be declined rather than invented.")
+    if not INDOOR_ROUTER_OK:
+        notes.append("The indoor engine did not load; indoor guidance is unavailable.")
+    return notes
+
+
 @app.get("/api/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     """What is real and what is mocked right now (PLAN §5)."""
@@ -125,6 +156,7 @@ def health() -> HealthResponse:
             "tts": tts.status(),
             "indoor": indoor_api.status() if INDOOR_ROUTER_OK else "mock",
         },
+        warnings=_warnings(),
     )
 
 

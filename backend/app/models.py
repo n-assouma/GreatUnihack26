@@ -189,3 +189,6 @@ class SessionDebug(BaseModel):
 class HealthResponse(BaseModel):
     ok: bool = True
     mocks: dict[str, str]
+    # Additive to CONTRACTS §3: things that are configured but cannot work, named
+    # plainly so they are found before a demo rather than during one.
+    warnings: list[str] = Field(default_factory=list)
