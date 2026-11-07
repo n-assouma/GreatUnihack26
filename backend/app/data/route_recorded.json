@@ -1,0 +1,221 @@
+{
+  "bus": {
+    "routes": [
+      {
+        "legs": [
+          {
+            "steps": [
+              {
+                "staticDuration": "23s",
+                "navigationInstruction": {
+                  "maneuver": "DEPART",
+                  "instructions": "Head south"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "34s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_LEFT",
+                  "instructions": "Turn left"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "101s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "19s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_LEFT",
+                  "instructions": "Turn left"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "23s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right\nDestination will be on the left"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "329s",
+                "navigationInstruction": {
+                  "instructions": "Bus towards Piccadilly Gardens"
+                },
+                "transitDetails": {
+                  "stopDetails": {
+                    "arrivalStop": {
+                      "name": "University Shopping Centre (Stop C)",
+                      "location": {
+                        "latLng": {
+                          "latitude": 53.467544999999994,
+                          "longitude": -2.234937
+                        }
+                      }
+                    },
+                    "arrivalTime": "2026-11-09T08:51:35Z",
+                    "departureStop": {
+                      "name": "St Mary's (Stop B)",
+                      "location": {
+                        "latLng": {
+                          "latitude": 53.458889899999996,
+                          "longitude": -2.2276369
+                        }
+                      }
+                    },
+                    "departureTime": "2026-11-09T08:46:06Z"
+                  },
+                  "localizedValues": {
+                    "arrivalTime": {
+                      "time": {
+                        "text": "8:51\u202fAM"
+                      },
+                      "timeZone": "Europe/London"
+                    },
+                    "departureTime": {
+                      "time": {
+                        "text": "8:46\u202fAM"
+                      },
+                      "timeZone": "Europe/London"
+                    }
+                  },
+                  "headsign": "Piccadilly Gardens",
+                  "transitLine": {
+                    "agencies": [
+                      {
+                        "name": "Bee Network",
+                        "phoneNumber": "+44 343 222 1234",
+                        "uri": "https://www.traveline.info/"
+                      }
+                    ],
+                    "name": "West Didsbury - Piccadilly Gardens",
+                    "color": "#f2d04a",
+                    "nameShort": "143",
+                    "textColor": "#000000",
+                    "vehicle": {
+                      "name": {
+                        "text": "Bus"
+                      },
+                      "type": "BUS",
+                      "iconUri": "//maps.gstatic.com/mapfiles/transit/iw2/6/bus2.png"
+                    }
+                  },
+                  "stopCount": 3
+                },
+                "travelMode": "TRANSIT"
+              },
+              {
+                "staticDuration": "97s",
+                "navigationInstruction": {
+                  "maneuver": "DEPART",
+                  "instructions": "Head northwest on Oxford Rd/B5117 toward Dalton St"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "67s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right onto Booth St E"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "16s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_LEFT",
+                  "instructions": "Turn left"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "19s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right\nDestination will be on the left"
+                },
+                "travelMode": "WALK"
+              }
+            ]
+          }
+        ],
+        "duration": "730s",
+        "polyline": {
+          "encodedPolyline": "wkheIxrrLt@OM}Bp@_B`@u@N{@h@cAIcAn@_@EYGa@{CnAcDbA_Br@gBzA{CxB_@RaB|AoAfB}BnCmHnI{CvCaGnEDTHKe@Z]\\eBxAOCMN}@_E]JMc@IO"
+        }
+      }
+    ]
+  },
+  "walk": {
+    "routes": [
+      {
+        "legs": [
+          {
+            "steps": [
+              {
+                "staticDuration": "52s",
+                "navigationInstruction": {
+                  "maneuver": "DEPART",
+                  "instructions": "Head north toward Denmark Rd"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "142s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right onto Denmark Rd"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "780s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_LEFT",
+                  "instructions": "Turn left onto Oxford Rd/B5117\nParts of this road are closed 6:00\u202fAM\u2009\u2013\u20099:00\u202fPM"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "67s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right onto Booth St E"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "16s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_LEFT",
+                  "instructions": "Turn left"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "19s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right\nDestination will be on the left"
+                },
+                "travelMode": "WALK"
+              }
+            ]
+          }
+        ],
+        "duration": "1075s",
+        "polyline": {
+          "encodedPolyline": "wkheIxrrL_@Lg@hAKHWyBgAaIGWMPy@t@o@^[TQRcAr@iAn@m@l@QHiBbCQLu@|@O\\u@x@YTcCnCM\\uBbCc@b@_Ax@oAnAgBjAa@FEPkAz@]XsCbCOCMN}@_E]JMc@IO"
+        }
+      }
+    ]
+  }
+}
