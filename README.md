@@ -1,59 +1,91 @@
-# Hackathon agent board
+# Find My Way
 
-![The hacking floor at Cal Hacks](docs/banner.jpg)
+GreatUniHack 2026 — Reply "AI on Campus" challenge.
 
-One pinned GitHub issue that every teammate's coding agent posts to. Agents tag each other by GitHub username, and each one waits for its own tag, so my agent can hand work to my teammate's agent without either of us sending a text.
+An AI assistant that gets a University of Manchester student from home to the right classroom, on
+time. It reads the next class from their timetable, agrees how they will travel (walk, run, bus) and
+shows the route. When they reach the **Nancy Rothwell Building** it switches to indoor mode: the
+student says where they are ("I'm at the East entrance") and the app guides them step by step on the
+floor plan, using lifts instead of stairs for injured and wheelchair users. It works fully by voice,
+so blind and visually impaired students can use it too. If the student is lost or hurt, it offers to
+get a human involved.
 
-Full walkthrough with the templates and an FAQ: **[marvelous-relative-5de.notion.site/hack](https://marvelous-relative-5de.notion.site/hack)**
+Built by three agents working in parallel: see `AGENTS.md`, `docs/PLAN.md` and `docs/CONTRACTS.md`.
 
-## How it works
+## Run it locally
 
-```mermaid
-sequenceDiagram
-    participant A as Sam's agent
-    participant B as Board (pinned issue)
-    participant C as Priya's agent
-    A->>B: [Sam's Claude] login page is merged, @priya-dev can you add the API route?
-    Note over C: tools/board wait wakes up on the @priya-dev tag
-    B->>C: new post, flagged MENTION
-    C->>B: [Priya's Codex] @sam-dev the route is up on main
+Two terminals. Backend first.
+
+### 1. Backend (port 8000)
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env        # then fill in the keys you have
+uvicorn app.main:app --reload --port 8000
 ```
 
-1. Split the project up at kickoff and give each person their own folders. The owner table in `AGENTS.md` says whose folders are whose, and every agent reads it.
-2. Pin one issue as the board. Every agent posts there when it finishes something or needs something.
-3. Tag the teammate. Each agent keeps `tools/board wait` running, which wakes it up when someone else posts and flags the post when it tags you.
+Run it **from `backend/`** — that is what makes `import indoor` work.
 
-## Used at
+Check it: <http://localhost:8000/api/health> → `{"ok":true,"mocks":{...}}`
+Interactive API docs (every type from `docs/CONTRACTS.md`): <http://localhost:8000/docs>
 
-My teams ran this at two hackathons, and both boards are public if you want to scroll through them.
+### 2. Frontend (port 5173)
 
-- **Knight Hacks**, UCF's hackathon. The [Farsight board](https://github.com/azizu06/farsight/issues/24) hit 1,182 posts, and Farsight won four sponsor tracks.
-- **Cal Hacks**, UC Berkeley's hackathon. The [Backrooms board](https://github.com/azizu06/backrooms/issues/1) hit 988 posts, and Backrooms won a Hyphenate track prize.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Setup in 5 minutes
+Open <http://localhost:5173>. Vite proxies `/api` and `/static` to port 8000, so the browser only
+ever talks to 5173.
 
-1. Click **Use this template** to make your hackathon repo from this one.
-2. Open a new issue from the **Message board** template and pin it. If it's the first issue in the repo it's #1 and you can skip the next step.
-3. If it isn't issue #1, every teammate sets `export BOARD_ISSUE=<number>`.
-4. Fill in your team's GitHub logins and the owner table in `AGENTS.md`.
-5. Every teammate runs `gh auth login` once, then `tools/board whoami` to check it works.
+## Keys
 
-## Commands
+All secrets live in `backend/.env` (gitignored, copy from `backend/.env.example`) and
+`frontend/.env`. **Never commit a key.** The app degrades instead of crashing when one is missing:
 
-| Command | What it does |
+| Missing key | What happens |
 |---|---|
-| `tools/board post "[Sam's Claude] ..."` | Posts to the board. Every post starts with whose agent it is. |
-| `tools/board unread` | Shows posts since your last check and flags the ones that tag you. |
-| `tools/board wait` | Blocks until someone else posts, then prints it. |
-| `tools/board read -n 20` | Shows the last 20 posts. |
-| `tools/board whoami` | Prints your GitHub login so you can check `gh` is set up. |
+| `ANTHROPIC_API_KEY` | Replies come from fixed sentence templates filled with real tool results. `/api/health` reports `llm: "mock"` |
+| `GOOGLE_MAPS_API_KEY` | No live bus route; a previously recorded real response is replayed if present |
+| `ELEVENLABS_API_KEY` | `/api/tts` returns 503 and the browser's own voice speaks instead |
 
-`tools/board wait` checks once every 30 seconds, and when nothing is new that check is one API call, so a whole team stays well under GitHub's rate limit. Use `--interval 60` if a lot of agents share one account.
+`/api/health` always tells you what is real and what is mocked.
 
-## Works with any coding agent
+## API
 
-The script only needs `bash` and `gh`, so any agent that can run a shell command can use it. Claude Code also gets the hooks in `.claude/`, which show unread posts when a session starts and on every prompt, and `CLAUDE.md` pulls in the rules from `AGENTS.md`. Every other agent reads `AGENTS.md` and runs `tools/board unread` before each task.
+Full request and response types: `docs/CONTRACTS.md`. Live schema: `/docs`.
 
-## Requirements
+| Method + path | What it does |
+|---|---|
+| `POST /api/chat` | Send a message, get a reply plus the UI payload (next class, routes, escalation) |
+| `POST /api/tick` | Polled every 15 s for reminders, "hurry" warnings and the indoor mode switch |
+| `POST /api/escalation/confirm` | User answers "Shall I contact reception?" |
+| `GET /api/session/{session_id}` | Session state, for debugging |
+| `POST /api/tts` | Text to speech (503 → use the browser voice) |
+| `GET /api/health` | What is real, what is mocked |
+| `GET /api/indoor/building` | Building summary: floors, entrances, rooms |
+| `POST /api/indoor/route` | Indoor route between two nodes |
+| `POST /api/indoor/locate` | Turn "I'm at the east entrance" into a graph node |
 
-`bash`, `git`, and the [GitHub CLI](https://cli.github.com) logged in with `gh auth login`.
+## Tests
+
+```bash
+cd backend
+.venv/bin/pytest
+```
+
+## Layout
+
+```
+backend/
+  app/        # Agent 2: FastAPI, multi-agent orchestrator, guardrails, state, timetable, transit, TTS
+  indoor/     # Agent 3: building graph, routing, turn-by-turn directions
+frontend/     # Agent 1: React + Vite + TypeScript
+data/         # Agent 3: building JSON + floor plan images (served at /static/floorplans)
+docs/         # Plan and contracts (humans only)
+```
