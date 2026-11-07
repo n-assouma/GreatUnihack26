@@ -136,10 +136,13 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
     text = message.lower().strip()
     events: list[GuardrailEvent] = []
 
+    mentions_injury = _contains(text, _INJURY_WORDS)
+    asks_for_help = _contains(text, _HELP_WORDS)
+
     # An injury mentioned in passing is an accessibility need, not an emergency.
     # The demo relies on this: "I'm at the East entrance and I hurt my ankle"
     # must produce a lift-only route, not an escalation card.
-    if _contains(text, _INJURY_WORDS) and not state.no_stairs:
+    if mentions_injury and not state.no_stairs:
         state.inferred_no_stairs = True
         events.append(
             _event(
@@ -161,7 +164,7 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
         return InputVerdict(events, refusal=UNSAFE_REFUSAL)
 
     # Hurt *and* asking for help, or an explicit request for a person -> a human (F9).
-    injured_and_stuck = _contains(text, _INJURY_WORDS) and _contains(text, _HELP_WORDS)
+    injured_and_stuck = mentions_injury and asks_for_help
     if injured_and_stuck or "emergency" in text or "call security" in text:
         events.append(
             _event("input", "emergency", "escalated", "User may be hurt and needs a person.")
@@ -212,6 +215,22 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
         )
         return InputVerdict(events, refusal=REFUSAL)
     if category == "emergency":
+        # The keyword stage already judged this: an injury mentioned while asking for
+        # directions is an accessibility need. A real classifier reads "I hurt my
+        # ankle" as an emergency and escalates, which broke demo step 4 outright —
+        # the lift-only route never came back and the session stuck in `escalated`.
+        # The code's decision wins (PLAN §4.4), and the override is visible.
+        if mentions_injury and not asks_for_help:
+            events.append(
+                _event(
+                    "input",
+                    "emergency_downgraded",
+                    "modified",
+                    "Classifier called this an emergency, but the user reported an injury "
+                    "while asking for directions: routing step-free instead of escalating.",
+                )
+            )
+            return InputVerdict(events)
         events.append(
             _event("input", "emergency", "escalated", "Classifier flagged an emergency.")
         )

@@ -226,7 +226,8 @@ def plan_outdoor_route(state: SessionState, mode: str) -> dict:
     except (ValueError, KeyError):
         return {"ok": False, "note": "The class start time is unreadable."}
 
-    state.transport_pref = mode if mode in ("walk", "run", "bus") else state.transport_pref
+    if mode in ("walk", "run", "bus"):
+        state.spoken_transport = mode  # type: ignore[assignment]
     route = transit.plan(mode, state.last_location, class_start, state.now())
 
     if route is None:
