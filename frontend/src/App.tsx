@@ -80,6 +80,15 @@ export default function App() {
     if (view === 'main') void api.tick(sid, toContext(settings, 0)).then(apply)
   }, [tickKey, view]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Poll /api/tick every 15 s (PLAN F13) using the latest settings and step, without re-creating the timer.
+  const latest = useRef(context)
+  latest.current = context
+  useEffect(() => {
+    if (view !== 'main') return
+    const id = setInterval(() => { void api.tick(sid, latest.current).then(apply) }, 15_000)
+    return () => clearInterval(id)
+  }, [view, sid]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (view === 'welcome') return <Welcome onStart={() => setView('onboarding')} />
   if (view === 'onboarding') {
     return <Settings settings={settings} onChange={updateSettings} onboarding onDone={finishSetup} />
