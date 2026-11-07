@@ -319,6 +319,53 @@ def test_a_broken_llm_still_returns_a_valid_chat_response(monkeypatch):
     assert body["ui"]["indoor_route"] is not None
 
 
+def test_walking_steps_are_folded_into_meaningful_legs():
+    """Google returns turn-by-turn walking; ten 'Turn left' legs are noise for a
+    panel and unspeakable aloud. F11 wants the bus line and the stops."""
+    from app.transit import _legs_from_payload
+
+    payload = {
+        "routes": [
+            {
+                "legs": [
+                    {
+                        "steps": [
+                            {"travelMode": "WALK", "staticDuration": "120s",
+                             "navigationInstruction": {"instructions": "Head south"}},
+                            {"travelMode": "WALK", "staticDuration": "60s",
+                             "navigationInstruction": {"instructions": "Turn left"}},
+                            {
+                                "travelMode": "TRANSIT",
+                                "staticDuration": "330s",
+                                "transitDetails": {
+                                    "transitLine": {"nameShort": "143",
+                                                    "vehicle": {"type": "BUS"}},
+                                    "stopDetails": {
+                                        "departureStop": {"name": "St Mary's (Stop B)"},
+                                        "arrivalStop": {"name": "University (Stop C)"},
+                                    },
+                                },
+                                "navigationInstruction": {"instructions": "Bus towards town"},
+                            },
+                            {"travelMode": "WALK", "staticDuration": "90s",
+                             "navigationInstruction": {"instructions": "Turn right"}},
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+
+    legs = _legs_from_payload(payload)
+
+    assert [leg["mode"] for leg in legs] == ["WALK", "BUS", "WALK"]
+    assert legs[0]["duration_min"] == 3.0
+    assert "St Mary's (Stop B)" in legs[0]["instruction"]  # walk names the stop
+    assert legs[1]["line"] == "143"
+    assert legs[1]["from_stop"] == "St Mary's (Stop B)"
+    assert "Nancy Rothwell" in legs[2]["instruction"]  # last walk names the destination
+
+
 def test_tts_returns_503_without_a_key():
     response = client.post("/api/tts", json={"text": "hello"})
     assert response.status_code == 503

@@ -121,6 +121,51 @@ def _seconds(value: str | None) -> float:
         return 0.0
 
 
+def _fold_walking(legs: list[dict]) -> list[dict]:
+    """Collapse each run of walking steps into one leg.
+
+    Google returns turn-by-turn walking ("Head south", "Turn left", 0.4 min each) —
+    ten legs for one bus journey. Spoken aloud or shown as a list that is noise; what
+    the student needs is "walk 3 min to St Mary's (Stop B)", then the bus, then the
+    walk to the building (F11: leave time, arrival time, bus line and stops).
+    """
+    folded: list[dict] = []
+    run: list[dict] = []
+
+    def flush(next_leg: dict | None) -> None:
+        if not run:
+            return
+        minutes = round(sum(item["duration_min"] for item in run), 1)
+        if next_leg and next_leg.get("from_stop"):
+            target = f" to {next_leg['from_stop']}"
+        elif next_leg:
+            target = " to the stop"
+        else:
+            target = " to the Nancy Rothwell Building"
+        folded.append(
+            {
+                "mode": "WALK",
+                "instruction": f"Walk {minutes:g} min{target}".replace(".0 min", " min"),
+                "duration_min": minutes,
+                "line": None,
+                "from_stop": None,
+                "to_stop": next_leg.get("from_stop") if next_leg else None,
+                "depart_at": None,
+                "arrive_at": None,
+            }
+        )
+        run.clear()
+
+    for leg in legs:
+        if leg["mode"] == "WALK":
+            run.append(leg)
+            continue
+        flush(leg)
+        folded.append(leg)
+    flush(None)
+    return folded
+
+
 def _legs_from_payload(payload: dict) -> list[dict]:
     legs: list[dict] = []
     for route in payload.get("routes", [])[:1]:
@@ -167,7 +212,7 @@ def _legs_from_payload(payload: dict) -> list[dict]:
                         "arrive_at": arrive_at if isinstance(arrive_at, str) else None,
                     }
                 )
-    return legs
+    return _fold_walking(legs)
 
 
 def _build_route(
