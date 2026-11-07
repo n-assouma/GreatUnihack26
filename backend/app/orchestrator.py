@@ -99,7 +99,7 @@ def run_turn(state: SessionState, message: str) -> TurnResult:
 
         if not result.tool_calls:
             reply, output_events = guardrails.output_guardrail(
-                result.text or "", state, fallback=_template_reply(state, message)
+                result.text or "", state, fallback=lambda: _template_reply(state, message)
             )
             events.extend(output_events)
             state.remember("assistant", reply)

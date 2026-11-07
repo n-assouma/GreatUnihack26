@@ -278,6 +278,12 @@ def locate_user(state: SessionState, text: str) -> dict:
             ],
         }
 
+    # We know where they are again, so the soft "we cannot place them" signal is
+    # spent. Confusion earlier in a long session must not count towards escalating
+    # later (A1's suggestion). `said_lost_count` deliberately survives: F9's trigger
+    # is the student saying it twice in the session, not twice in a row.
+    state.lost_count = 0
+
     state.current_node = node_id
     floor = indoor_api.floor_of(node_id)
     if floor is not None:
