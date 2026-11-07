@@ -9,6 +9,21 @@ import uuid
 
 import httpx
 
+try:  # share the guardrail's own rule so the two cannot drift apart
+    from app.guardrails import _STAIRS_INSTRUCTION
+
+    def instructs_stairs(text: str) -> bool:
+        return bool(_STAIRS_INSTRUCTION.search(text))
+
+except ImportError:  # run from somewhere the app is not importable
+    import re
+
+    _FALLBACK = re.compile(r"\b(?:take|use|climb|go up|head up)\s+(?:the\s+)?stair", re.I)
+
+    def instructs_stairs(text: str) -> bool:
+        return bool(_FALLBACK.search(text))
+
+
 BASE = "http://localhost:8000"
 DEMO_TIME = "2026-11-09T09:30:00+00:00"  # Monday, 30 min before the real 10:00 class.
 # 09:30 is deliberate: from Ashburne Hall the real journey is ~21 min (bus 41), so
@@ -118,7 +133,10 @@ check(
     ("a route came back", bool(steps)),
     ("it is accessible", route.get("accessible") is True),
     ("no step uses stairs", all(s.get("via") != "stairs" for s in steps)),
-    ("the reply never says stairs", "stair" not in (body.get("reply") or "").lower()),
+    # Not "never says stairs": "this route avoids stairs completely" is exactly the
+    # right reassurance for a wheelchair user. What must never appear is an
+    # instruction to use them, judged by the same rule the output guardrail applies.
+    ("the reply never tells them to use stairs", not instructs_stairs(body.get("reply") or "")),
     ("it changes floor via the lift", any(s.get("via") == "lift" for s in steps)),
     ("reaches Lecture Theatre A", route.get("destination_id") == "THEATRE_A"),
     ("the floor plan panel is suggested", body["ui"].get("open_panel") == "floorplan"),
