@@ -35,17 +35,17 @@ TURN_WORDS = {
 
 
 def walk_instruction(turn: str, distance_m: float, target_label: str | None,
-                     towards: bool = False, after_lift: bool = False) -> str:
+                     towards: bool = False, after: str | None = None) -> str:
     dist = max(5, int(round(distance_m / 5.0)) * 5)
-    if after_lift:
-        head = "Leave the lift and walk"
+    if after:
+        head = f"Leave the {after} and walk"
     elif turn == "start":
         head = "Walk straight ahead"
     elif turn == "straight":
         head = "Continue straight"
     else:
         head = f"{TURN_WORDS.get(turn, 'Walk')} and walk"
-    text = f"{head} about {dist} m" if turn not in ("start", "straight") or after_lift else f"{head} for about {dist} m"
+    text = f"{head} about {dist} m" if turn not in ("start", "straight") or after else f"{head} for about {dist} m"
     if target_label:
         text += f" {'towards' if towards else 'to'} {target_label}"
     return text

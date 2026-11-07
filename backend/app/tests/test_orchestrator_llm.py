@@ -249,6 +249,43 @@ def test_keywords_match_whole_words_only(scripted, message):
     assert not [e for e in body["guardrails"] if e["action"] == "blocked"], body["guardrails"]
 
 
+def test_an_ambiguous_location_does_not_escalate_on_its_own(scripted):
+    """With the real graph "by the lifts" is a reasonable answer that comes back
+    ambiguous. Asking "which lift?" twice must not offer to call reception."""
+    scripted(
+        llm.LlmResult(ok=True, tool_calls=[tool_call("locate_user", {"text": "by the lifts"})]),
+        llm.LlmResult(ok=True, text="Which lift core are you at?"),
+        llm.LlmResult(ok=True, tool_calls=[tool_call("locate_user", {"text": "by the lifts"}, "c2")]),
+        llm.LlmResult(ok=True, text="Is it the one by the main doors?"),
+    )
+    client.post("/api/tick", json={"session_id": "s-amb", "context": {**PLAIN, **AT_BUILDING}})
+
+    call("I'm by the lifts", {**PLAIN, **AT_BUILDING}, session_id="s-amb")
+    body = call("by the lifts", {**PLAIN, **AT_BUILDING}, session_id="s-amb")
+
+    assert body["phase"] != "escalated", body
+    assert body["ui"]["escalation"] is None
+    assert get_session("s-amb").lost_count >= 1  # still counted as a signal
+
+
+def test_saying_lost_once_then_an_unresolvable_location_does_escalate(scripted):
+    """Distress plus a position we cannot pin down is when a human is warranted."""
+    scripted(
+        llm.LlmResult(ok=True, tool_calls=[tool_call("locate_user", {"text": "no idea"})]),
+        llm.LlmResult(ok=True, text="Can you see a lift or a door?"),
+    )
+    client.post("/api/tick", json={"session_id": "s-esc", "context": {**PLAIN, **AT_BUILDING}})
+
+    call("I'm lost", {**PLAIN, **AT_BUILDING}, session_id="s-esc")  # said_lost = 1
+    body = call("somewhere near a corridor", {**PLAIN, **AT_BUILDING}, session_id="s-esc")
+
+    state = get_session("s-esc")
+    assert state.lost_count >= 2 and state.said_lost_count == 1
+    # The next distress signal escalates.
+    final = call("I'm lost", {**PLAIN, **AT_BUILDING}, session_id="s-esc")
+    assert final["ui"]["escalation"] is not None, final
+
+
 def test_asking_for_a_person_still_escalates():
     """The counterpart to the above: real requests for help must still get through."""
     body = call("I need help, can I talk to someone?", PLAIN, session_id="s-help")

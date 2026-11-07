@@ -255,14 +255,65 @@ def test_unknown_room_is_never_invented():
         )
 
 
-def test_output_guardrail_strips_stairs_for_a_no_stairs_user():
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Take the stairs up to floor 1.",
+        "Go up the stairs and turn left.",
+        "Use the staircase on your right.",
+        "Head up the stairs to the first floor.",
+        "You can get there via the stairs.",
+    ],
+)
+def test_output_guardrail_refuses_to_send_a_no_stairs_user_up_stairs(reply):
     from app import guardrails
     from app.state import get_session
 
     state = get_session("s-output")
     state.inferred_no_stairs = True
-    reply, events = guardrails.output_guardrail("Take the stairs up to floor 1.", state)
-    assert "stair" not in reply.lower()
+    cleaned, events = guardrails.output_guardrail(reply, state)
+    assert "stair" not in cleaned.lower()
+    assert any(e.rule == "no_stairs_enforced" for e in events)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        # A3's graph names stairwells as landmarks, and a wheelchair user standing
+        # near one is giving us a valid position. Blocking the word threw away the
+        # clarifying question and left the conversation stuck.
+        "Which one are you at: Core 1, Core 2 or Core 3 stairwell?",
+        "You're by the Core 2 stairwell. The lift is just past it on your left.",
+        "I can see you're near the stairs — the lift is 10 metres to your right.",
+    ],
+)
+def test_naming_a_stairwell_as_a_landmark_is_allowed(reply):
+    from app import guardrails
+    from app.state import get_session
+
+    state = get_session("s-landmark")
+    state.inferred_no_stairs = True
+    cleaned, events = guardrails.output_guardrail(reply, state)
+    assert cleaned == reply, cleaned
+    assert not [e for e in events if e.rule == "no_stairs_enforced"]
+
+
+def test_a_route_that_uses_stairs_is_refused_whatever_the_wording():
+    """The hard half of F5: wording aside, the route itself must be step-free."""
+    from app import guardrails
+    from app.state import get_session
+
+    state = get_session("s-hardstairs")
+    state.inferred_no_stairs = True
+    state.indoor_route = {
+        "start_node": "entrance_east",
+        "destination_id": "THEATRE_A",
+        "accessible": False,
+        "steps": [{"index": 0, "instruction": "Up to floor 1", "via": "stairs", "floor": 0}],
+        "segments": [],
+    }
+    cleaned, events = guardrails.output_guardrail("Head up to the first floor.", state)
+    assert "step-free" in cleaned
     assert any(e.rule == "no_stairs_enforced" for e in events)
 
 

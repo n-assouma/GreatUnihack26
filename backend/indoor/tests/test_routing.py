@@ -117,3 +117,34 @@ def test_http_endpoints():
     assert client.post("/api/indoor/route", json={"start": "nope", "destination": "THEATRE_A",
                                                   "accessible": True}).status_code == 404
     assert client.post("/api/indoor/locate", json={"text": "east entrance"}).json()["node_id"] == "entrance_east"
+
+
+def test_non_accessible_route_may_use_stairs_and_accessible_never_does():
+    plain = api.get_indoor_route("entrance_south", "3A.041", accessible=False)
+    assert any(s["via"] == "stairs" for s in plain["steps"])
+    assert plain["steps"][-1]["to_node"] == "3A.041"
+    for entrance in ENTRANCES:
+        for room in DEMO_ROOMS:
+            acc = api.get_indoor_route(entrance, room, accessible=True)
+            assert not any(s["via"] == "stairs" or s["turn"] == "stairs" for s in acc["steps"])
+            assert not any("stairs" in s["instruction"].lower() for s in acc["steps"])
+
+
+def test_multi_floor_lift_is_one_step_and_pass_through_floors_not_drawn():
+    r = api.get_indoor_route("entrance_south", "3A.041", accessible=True)
+    lifts = [s for s in r["steps"] if s["via"] == "lift"]
+    assert len(lifts) == 1 and lifts[0]["target_floor"] == 3
+    assert [seg["floor"] for seg in r["segments"]] == [0, 3]
+
+
+@pytest.mark.parametrize("entrance", ENTRANCES)
+@pytest.mark.parametrize("accessible", [True, False])
+def test_theatre_b_and_floor_2_landmarks_reachable(entrance, accessible):
+    assert api.get_indoor_route(entrance, "THEATRE_B", accessible)["steps"][-1]["to_node"] == "THEATRE_B"
+    assert api.get_indoor_route(entrance, "f2_cafe_connect", accessible)["steps"][-1]["to_node"] == "f2_cafe_connect"
+    assert api.room_exists("THEATRE_B")
+
+
+def test_locate_floor_2_landmarks():
+    assert api.locate("I'm at the connect cafe")["node_id"] == "f2_cafe_connect"
+    assert api.locate("near the computer cluster")["node_id"] == "f2_computer_cluster"

@@ -101,6 +101,19 @@ def _contains(text: str, words: tuple[str, ...]) -> bool:
     return bool(_matcher(words).search(text))
 
 
+def _should_escalate_lost(state: SessionState) -> bool:
+    """Offer a human once the student has twice told us they are lost, or told us
+    once and we still cannot place them.
+
+    Never on failed locates alone: with the real building graph "by the lifts" is a
+    perfectly reasonable answer that comes back ambiguous, and asking "which lift?"
+    twice must not turn into an unprompted offer to call reception.
+    """
+    if state.said_lost_count >= 2:
+        return True
+    return state.said_lost_count >= 1 and state.lost_count >= 2
+
+
 class InputVerdict:
     """What the input stage decided."""
 
@@ -109,10 +122,14 @@ class InputVerdict:
         events: list[GuardrailEvent],
         refusal: str | None = None,
         escalate: str | None = None,
+        reask_position: bool = False,
     ) -> None:
         self.events = events
         self.refusal = refusal  # set => return this reply immediately, skip the agents
         self.escalate = escalate  # "lost" | "injured" | "user_request"
+        # The student is lost but not yet distressed enough for a human: re-anchor
+        # them by asking what they can see, rather than repeating the last step.
+        self.reask_position = reask_position
 
 
 def input_guardrail(message: str, state: SessionState) -> InputVerdict:
@@ -157,20 +174,21 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
 
     if _contains(text, _LOST_WORDS):
         state.lost_count += 1
-        if state.lost_count >= 2:
+        state.said_lost_count += 1
+        if _should_escalate_lost(state):
             events.append(
                 _event(
                     "input",
                     "lost",
                     "escalated",
-                    f"User has said they are lost {state.lost_count} times.",
+                    f"User has said they are lost {state.said_lost_count} times.",
                 )
             )
             return InputVerdict(events, escalate="lost")
         events.append(
             _event("input", "lost", "modified", "User is lost; asking where they are.")
         )
-        return InputVerdict(events)
+        return InputVerdict(events, reask_position=True)
 
     if _contains(text, _OFF_TOPIC_WORDS):
         events.append(_event("input", "off_topic", "blocked", "Off-topic request refused."))
@@ -200,7 +218,8 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
         return InputVerdict(events, escalate="injured")
     if category == "lost":
         state.lost_count += 1
-        if state.lost_count >= 2:
+        state.said_lost_count += 1
+        if _should_escalate_lost(state):
             events.append(
                 _event("input", "lost", "escalated", "Classifier flagged the user as lost twice.")
             )
@@ -320,7 +339,17 @@ def tool_guardrail(
 
 _ROOM_CODE = re.compile(r"\b\d[A-Z]{1,2}\.\d{2,3}\b")
 _BUS_LINE = re.compile(r"\b(?:bus|route|service)\s+(\d{1,3}[A-Z]?)\b", re.IGNORECASE)
-_STAIRS = re.compile(r"\bstair(?:s|case|well)?\b", re.IGNORECASE)
+# What F5 must stop is *being told to use* stairs. Naming a stairwell as a landmark
+# is fine and sometimes necessary: "Core 2 stairwell" is a real place in this
+# building, and a wheelchair user saying "I'm near the stairs" is telling us where
+# they are. Blocking the bare word threw away legitimate clarifying questions
+# ("Core 1, Core 2 or Core 3 stairwell?") and left the conversation stuck.
+_STAIRS_INSTRUCTION = re.compile(
+    r"\b(?:take|use|using|climb|via|go|head|walk|continue|carry\s+on)"
+    r"(?:\s+\w+){0,2}?\s+(?:the\s+|a\s+)?stair",
+    re.IGNORECASE,
+)
+_STAIRS_ANY = re.compile(r"\bstair(?:s|case|well|wells)?\b", re.IGNORECASE)
 
 
 def _allowed_facts(state: SessionState) -> set[str]:
@@ -369,7 +398,7 @@ def output_guardrail(
         )
 
     # F5: never tell someone who cannot use stairs to take the stairs.
-    if state.no_stairs and _STAIRS.search(reply):
+    if state.no_stairs and _STAIRS_INSTRUCTION.search(reply):
         events.append(
             _event(
                 "output",
@@ -379,8 +408,25 @@ def output_guardrail(
             )
         )
         reply = fallback or "Take the lift — I'll guide you to the nearest one."
-        if _STAIRS.search(reply):  # the fallback mentioned them too
+        if _STAIRS_ANY.search(reply):  # the fallback mentioned them too
             reply = "Take the lift — I'll guide you to the nearest one."
+
+    # The hard half of F5, independent of wording: if a no-stairs user somehow ended
+    # up with a route that climbs stairs, the reply must not stand whatever it says.
+    if state.no_stairs and state.indoor_route:
+        steps = state.indoor_route.get("steps") or []
+        if any(step.get("via") == "stairs" for step in steps):
+            events.append(
+                _event(
+                    "output",
+                    "no_stairs_enforced",
+                    "modified",
+                    "The planned route used stairs for a user who cannot: refused it.",
+                )
+            )
+            reply = (
+                "Let me find you a step-free way round — I'll route you to the lift instead."
+            )
 
     # PLAN §4.5: no room codes or transport lines that no tool returned.
     allowed = _allowed_facts(state)

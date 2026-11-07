@@ -61,6 +61,16 @@ def run_turn(state: SessionState, message: str) -> TurnResult:
     # --- the phase machine, before the LLM, so mode-switching is deterministic (F12) ---
     advance_phase(state, message)
 
+    if verdict.reask_position and not llm.available():
+        # Repeating the step they are already stuck on is the one answer that is no
+        # use here, and it is what the template path would otherwise give.
+        reply = (
+            "Let's get you back on track. What can you see around you — a lift, "
+            "a door, or a room number?"
+        )
+        state.remember("assistant", reply)
+        return TurnResult(reply, state.active_agent, events, used_llm=False)
+
     if not llm.available():
         return _template_turn(state, message, events)
 
@@ -166,6 +176,13 @@ def run_turn(state: SessionState, message: str) -> TurnResult:
 # --- D6: the same turn, without the LLM -------------------------------------------
 
 
+def _as_list(options: list[str]) -> str:
+    """"a, b or c" — it gets read aloud, so no trailing "or" on every item."""
+    if len(options) <= 1:
+        return options[0] if options else ""
+    return f"{', '.join(options[:-1])} or {options[-1]}"
+
+
 def _first_step_text(state: SessionState) -> str | None:
     steps = (state.indoor_route or {}).get("steps") or []
     index = state.current_step or 0
@@ -190,7 +207,9 @@ def _template_reply(state: SessionState, message: str) -> str:
                     if item.get("label")
                 ]
                 if options:
-                    return "Which entrance are you at: " + ", or ".join(options[:3]) + "?"
+                    # Candidates can be entrances, lifts, stairwells or rooms, so the
+                    # question has to be neutral about what they are.
+                    return f"Which of these are you nearest to: {_as_list(options[:3])}?"
                 return "Whereabouts in the building are you? Tell me the nearest door or lift."
 
         if state.indoor_route is None and next_class:

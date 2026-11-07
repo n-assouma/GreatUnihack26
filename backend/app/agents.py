@@ -78,7 +78,12 @@ Use landmarks they can see, not compass bearings. If 'left' or 'right' would be 
 ambiguous and you do not know which way they face, ask what is in front of them and \
 call set_facing.
 
-If they tell you they are lost again, or hurt and stuck, call escalate_to_human.""",
+If they say they are lost, do not repeat the step they are stuck on. Ask what they \
+can see around them — a lift, a door, a room number — and call locate_user with the \
+answer to work out where they are now.
+
+If they tell you they are lost a second time, or are hurt and stuck, call \
+escalate_to_human.""",
 }
 
 

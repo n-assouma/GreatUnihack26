@@ -48,6 +48,11 @@ def build_route(start: str, destination: str, accessible: bool, heading: float |
         dist = g[a_id][b_id]["weight"]
         vertical = etype in ("lift", "stairs")
         if vertical:
+            last = legs[-1] if legs else None
+            if last and last["vertical"] and last["type"] == etype and last["to"] == a_id:
+                # Several floors in one go: one "Take the lift to floor 3" step.
+                last.update({"to": b_id, "target_floor": b["floor"], "to_idx": i})
+                continue
             legs.append({"vertical": True, "type": etype, "from": a_id, "to": b_id, "dist": 0.0,
                          "floor": a["floor"], "target_floor": b["floor"], "to_idx": i})
             continue
@@ -62,6 +67,21 @@ def build_route(start: str, destination: str, accessible: bool, heading: float |
         else:
             legs.append({"vertical": False, "from": a_id, "to": b_id, "dist": dist, "bearing": brg,
                          "floor": a["floor"], "to_idx": i})
+
+    # Fold tiny hops (a few metres, e.g. just inside a door) into the next walking leg.
+    folded: list[dict] = []
+    k = 0
+    while k < len(legs):
+        leg = legs[k]
+        nxt = legs[k + 1] if k + 1 < len(legs) else None
+        if (not leg["vertical"] and leg["dist"] < 7 and nxt and not nxt["vertical"]
+                and nxt["floor"] == leg["floor"]):
+            folded.append({**nxt, "from": leg["from"], "dist": leg["dist"] + nxt["dist"]})
+            k += 2
+        else:
+            folded.append(leg)
+            k += 1
+    legs = folded
 
     # Initial facing direction.
     start_node = nodes[start]
@@ -87,9 +107,9 @@ def build_route(start: str, destination: str, accessible: bool, heading: float |
             if label:
                 towards = j != leg["to_idx"]
                 break
-        after_lift = prev is None and bool(steps) and steps[-1]["turn"] in ("lift", "stairs")
+        after = steps[-1]["turn"] if prev is None and steps and steps[-1]["turn"] in ("lift", "stairs") else None
         steps.append({"index": idx, "instruction": directions.walk_instruction(
-                          turn, leg["dist"], label, towards=towards, after_lift=after_lift),
+                          turn, leg["dist"], label, towards=towards, after=after),
                       "floor": leg["floor"], "from_node": leg["from"], "to_node": leg["to"],
                       "distance_m": round(leg["dist"], 1), "bearing_deg": round(leg["bearing"], 1),
                       "turn": turn, "via": None, "target_floor": None})
@@ -119,6 +139,9 @@ def build_route(start: str, destination: str, accessible: bool, heading: float |
                 (i for i in floor_segments if [nodes[s["from_node"]]["x"], nodes[s["from_node"]]["y"]]
                  in segments[i]["points"]), floor_segments[0])
         segments[seg_i]["step_indices"].append(s["index"])
+
+    # Floors you only pass through (no step on them) are not drawn.
+    segments = [s for s in segments if s["step_indices"]]
 
     total = sum(g[a][b]["weight"] for a, b in zip(path, path[1:]) if g[a][b]["type"] not in ("lift", "stairs"))
     return {"start_node": start, "destination_id": destination, "accessible": accessible,
