@@ -9,6 +9,7 @@ import { NavBar, type Tab } from './components/NavBar'
 import { Settings } from './components/Settings'
 import { StatusBar } from './components/StatusBar'
 import { Toast, type ToastMessage } from './components/Toast'
+import { VoiceFab } from './components/VoiceFab'
 import type { VoiceState } from './components/VoiceIndicator'
 import { Welcome } from './components/Welcome'
 import { useCompass } from './hooks/useCompass'
@@ -54,7 +55,14 @@ export default function App() {
   const compass = useCompass()
   const position = useGeolocation(settings.use_location)
   // Speech: the mic sends what you said as a normal message, and replies are read aloud when voice is on.
-  const speech = useSpeech({ onFinal: (text) => { void send(text) } })
+  // A question asked by voice from another tab gets its answer as a banner and out loud, since the chat is not on screen.
+  const voiceElsewhere = useRef(false)
+  const speech = useSpeech({
+    onFinal: (text) => {
+      if (tabRef.current !== 'chat') voiceElsewhere.current = true
+      void send(text)
+    },
+  })
   const voiceOn = settings.voice || settings.visual_impairment
   const voiceOnRef = useRef(voiceOn)
   voiceOnRef.current = voiceOn
@@ -101,9 +109,24 @@ export default function App() {
     // A route the user is not looking at gets a dot on its tab instead of yanking them to another screen.
     if (res.ui.outdoor_route && tabRef.current !== 'map') setNewRoute((n) => ({ ...n, map: true }))
     if (res.ui.indoor_route && tabRef.current !== 'plan') setNewRoute((n) => ({ ...n, plan: true }))
-    if (fromTick && res.reply) setToast({ id: Date.now(), text: res.reply, agent: res.agent })
-    if (res.reply && voiceOnRef.current) void speakRef.current(res.reply)
-    if (res.reply) setMessages((m) => [...m, { role: 'assistant' as const, text: res.reply!, agent: res.agent, guardrails: res.guardrails }].slice(-MAX_MESSAGES))
+    // A route in this reply becomes a card in the chat (and a button on the banner) that opens the right screen.
+    const o = res.ui.outdoor_route, i = res.ui.indoor_route
+    // Once the student is inside the building the floor plan is what matters, even if the reply still carries the bus route.
+    const inside = res.phase === 'indoor' || res.phase === 'arrived'
+    const mapCard: ChatMessage['action'] | undefined = o
+      ? { tab: 'map', title: o.summary, detail: `Leave ${new Date(o.leave_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · ${o.status === 'on_time' ? 'On time' : o.status === 'hurry' ? 'Hurry' : 'Running late'}` }
+      : undefined
+    const planCard: ChatMessage['action'] | undefined = i
+      ? { tab: 'plan', title: `Indoor route · ${i.steps.length} steps`, detail: `${Math.round(i.total_distance_m)} m${i.accessible ? ' · step-free' : ''}` }
+      : undefined
+    const action = fromTick ? undefined : inside ? (planCard ?? mapCard) : (mapCard ?? planCard)
+    const byVoiceElsewhere = !fromTick && voiceElsewhere.current && Boolean(res.reply)
+    if (byVoiceElsewhere) voiceElsewhere.current = false
+    if ((fromTick || byVoiceElsewhere) && res.reply) {
+      setToast({ id: Date.now(), text: res.reply, agent: res.agent, action: action && { label: action.tab === 'map' ? 'Open map' : 'Open floor plan', tab: action.tab } })
+    }
+    if (res.reply && (voiceOnRef.current || byVoiceElsewhere)) void speakRef.current(res.reply)
+    if (res.reply) setMessages((m) => [...m, { role: 'assistant' as const, text: res.reply!, agent: res.agent, guardrails: res.guardrails, action }].slice(-MAX_MESSAGES))
   }
 
   async function send(text: string) {
@@ -163,7 +186,7 @@ export default function App() {
 
   return (
     <div className="shell">
-      <Toast toast={toast} onDismiss={() => setToast(null)} />
+      <Toast toast={toast} onDismiss={() => setToast(null)} onAction={setTab} />
       {/* Shown above every screen so a tab switch can never hide a request for help. */}
       {escalation && (
         <div className="escalation" role="alert" aria-label="Contact reception">
@@ -179,7 +202,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="shell-body">
+      <div className={`shell-body${tab !== 'chat' && speech.supported ? ' has-fab' : ''}`}>
         {tab === 'chat' && (
           <div className="app">
             <StatusBar demo={settings.demo_mode} nextClass={state?.ui.next_class ?? null} outdoor={outdoor} phase={phase} />
@@ -198,6 +221,7 @@ export default function App() {
               </button>
             ) : null}
             <ChatPanel messages={messages} pending={pending} nextClass={state?.ui.next_class ?? null} suggestions={suggestions} onSend={send}
+              onOpenTab={setTab}
               voice={{ state: voiceState, onStop: speech.listening ? speech.stop : speech.cancel, transcript: speech.transcript }}
               mic={{ supported: speech.supported, listening: speech.listening, error: speech.error, onToggle: speech.listening ? speech.stop : speech.start }}
             />
@@ -229,6 +253,12 @@ export default function App() {
           />
         )}
       </div>
+      {tab !== 'chat' && speech.supported && (
+        <VoiceFab
+          state={voiceState} transcript={speech.transcript} listening={speech.listening} error={speech.error}
+          onToggle={speech.listening ? speech.stop : speech.start} onStop={speech.listening ? speech.stop : speech.cancel}
+        />
+      )}
       <NavBar tab={tab} onChange={setTab} badges={newRoute} />
     </div>
   )

@@ -8,6 +8,8 @@ export interface ChatMessage {
   text: string
   agent?: AgentName
   guardrails?: GuardrailEvent[]
+  /** A card under the message that jumps to the screen showing what the assistant just planned. */
+  action?: { tab: 'map' | 'plan'; title: string; detail: string }
 }
 
 export const MAX_INPUT_CHARS = 2000
@@ -23,9 +25,10 @@ interface Props {
   voice?: { state: VoiceState; level?: number; onStop?: () => void; transcript?: string }
   /** Microphone input. Hidden when the browser has no speech recognition. */
   mic?: { supported: boolean; listening: boolean; error: string | null; onToggle: () => void }
+  onOpenTab: (tab: 'map' | 'plan') => void
 }
 
-export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, voice, mic }: Props) {
+export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, voice, mic, onOpenTab }: Props) {
   const [text, setText] = useState('')
   const [showJump, setShowJump] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
@@ -82,6 +85,13 @@ export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, v
             <div key={i} className={`msg msg-${m.role}`}>
               {m.agent && <span className="agent-tag">{m.agent}</span>}
               <p>{m.text}</p>
+              {m.action && (
+                <button className="msg-action" onClick={() => onOpenTab(m.action!.tab)}>
+                  <Icon name={m.action.tab === 'map' ? 'bus' : 'layers'} size={22} />
+                  <span className="msg-action-text"><strong>{m.action.title}</strong><span>{m.action.detail}</span></span>
+                  <span className="msg-action-go">{m.action.tab === 'map' ? 'Open map' : 'Open floor plan'}</span>
+                </button>
+              )}
               {m.guardrails?.map((g, j) => (
                 <span key={j} className="badge" title={g.message}>Guardrail: {g.message} ({g.action})</span>
               ))}
