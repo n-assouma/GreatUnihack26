@@ -29,8 +29,11 @@ def render(floor: int, highlight: list[str] | None = None) -> Path:
         if a["floor"] != floor or c["floor"] != floor:
             continue
         on_route = (e["from"], e["to"]) in hl_edges or (e["to"], e["from"]) in hl_edges
-        col = (255, 0, 255) if on_route else (60, 60, 60)
-        d.line([(a["x"], a["y"]), (c["x"], c["y"])], fill=col, width=7 if on_route else 3)
+        # Thick bright line with a thin dark outline so it shows on any plan colour.
+        col = (255, 0, 200) if on_route else (255, 215, 0)
+        pts = [(a["x"], a["y"]), (c["x"], c["y"])]
+        d.line(pts, fill=(0, 0, 0), width=14 if on_route else 12)
+        d.line(pts, fill=col, width=9 if on_route else 8)
     for n in b["nodes"]:
         if n["floor"] != floor:
             continue
