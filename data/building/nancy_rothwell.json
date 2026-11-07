@@ -570,6 +570,138 @@
     "3a.041",
     "3a 041"
    ]
+  },
+  {
+   "id": "f0_core1_stairs",
+   "floor": 0,
+   "x": 373,
+   "y": 764,
+   "type": "stairs",
+   "label": "Core 1 stairwell (ground floor)",
+   "aliases": [
+    "core 1 steps"
+   ]
+  },
+  {
+   "id": "f0_core2_stairs",
+   "floor": 0,
+   "x": 655,
+   "y": 757,
+   "type": "stairs",
+   "label": "Core 2 stairwell (ground floor)",
+   "aliases": [
+    "core 2 steps"
+   ]
+  },
+  {
+   "id": "f0_core3_stairs",
+   "floor": 0,
+   "x": 940,
+   "y": 757,
+   "type": "stairs",
+   "label": "Core 3 stairwell (ground floor)",
+   "aliases": [
+    "core 3 steps"
+   ]
+  },
+  {
+   "id": "f1_core1_stairs",
+   "floor": 1,
+   "x": 357,
+   "y": 790,
+   "type": "stairs",
+   "label": "Core 1 stairwell (first floor)",
+   "aliases": [
+    "core 1 steps"
+   ]
+  },
+  {
+   "id": "f1_core2_stairs",
+   "floor": 1,
+   "x": 655,
+   "y": 785,
+   "type": "stairs",
+   "label": "Core 2 stairwell (first floor)",
+   "aliases": [
+    "core 2 steps"
+   ]
+  },
+  {
+   "id": "f1_core3_stairs",
+   "floor": 1,
+   "x": 953,
+   "y": 785,
+   "type": "stairs",
+   "label": "Core 3 stairwell (first floor)",
+   "aliases": [
+    "core 3 steps"
+   ]
+  },
+  {
+   "id": "f2_core1_stairs",
+   "floor": 2,
+   "x": 265,
+   "y": 820,
+   "type": "stairs",
+   "label": "Core 1 stairwell (second floor)",
+   "aliases": [
+    "core 1 steps"
+   ]
+  },
+  {
+   "id": "f2_core2_stairs",
+   "floor": 2,
+   "x": 583,
+   "y": 820,
+   "type": "stairs",
+   "label": "Core 2 stairwell (second floor)",
+   "aliases": [
+    "core 2 steps"
+   ]
+  },
+  {
+   "id": "f2_core3_stairs",
+   "floor": 2,
+   "x": 900,
+   "y": 820,
+   "type": "stairs",
+   "label": "Core 3 stairwell (second floor)",
+   "aliases": [
+    "core 3 steps"
+   ]
+  },
+  {
+   "id": "f3_core1_stairs",
+   "floor": 3,
+   "x": 338,
+   "y": 822,
+   "type": "stairs",
+   "label": "Core 1 stairwell (third floor)",
+   "aliases": [
+    "core 1 steps"
+   ]
+  },
+  {
+   "id": "f3_core2_stairs",
+   "floor": 3,
+   "x": 640,
+   "y": 822,
+   "type": "stairs",
+   "label": "Core 2 stairwell (third floor)",
+   "aliases": [
+    "core 2 steps"
+   ]
+  },
+  {
+   "id": "f3_core3_stairs",
+   "floor": 3,
+   "x": 940,
+   "y": 822,
+   "type": "stairs",
+   "label": "Core 3 stairwell (third floor)",
+   "aliases": [
+    "core 3 steps"
+   ]
   }
  ],
  "edges": [
@@ -886,6 +1018,153 @@
    "to": "3A.041",
    "type": "door",
    "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core1_stairs",
+   "to": "f0_top_core1",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core2_stairs",
+   "to": "f0_top_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core3_stairs",
+   "to": "f0_top_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_core1_stairs",
+   "to": "f1_corr_core1",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core1_stairs",
+   "to": "f1_core1_stairs",
+   "type": "stairs",
+   "accessible": false,
+   "keycard": false
+  },
+  {
+   "from": "f1_core2_stairs",
+   "to": "f1_corr_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core2_stairs",
+   "to": "f1_core2_stairs",
+   "type": "stairs",
+   "accessible": false,
+   "keycard": false
+  },
+  {
+   "from": "f1_core3_stairs",
+   "to": "f1_corr_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core3_stairs",
+   "to": "f1_core3_stairs",
+   "type": "stairs",
+   "accessible": false,
+   "keycard": false
+  },
+  {
+   "from": "f2_core1_stairs",
+   "to": "f2_corr_core1",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_core1_stairs",
+   "to": "f2_core1_stairs",
+   "type": "stairs",
+   "accessible": false,
+   "keycard": false
+  },
+  {
+   "from": "f2_core2_stairs",
+   "to": "f2_corr_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_core2_stairs",
+   "to": "f2_core2_stairs",
+   "type": "stairs",
+   "accessible": false,
+   "keycard": false
+  },
+  {
+   "from": "f2_core3_stairs",
+   "to": "f2_corr_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_core3_stairs",
+   "to": "f2_core3_stairs",
+   "type": "stairs",
+   "accessible": false,
+   "keycard": false
+  },
+  {
+   "from": "f3_core1_stairs",
+   "to": "f3_front_core1",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_core1_stairs",
+   "to": "f3_core1_stairs",
+   "type": "stairs",
+   "accessible": false,
+   "keycard": false
+  },
+  {
+   "from": "f3_core2_stairs",
+   "to": "f3_front_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_core2_stairs",
+   "to": "f3_core2_stairs",
+   "type": "stairs",
+   "accessible": false,
+   "keycard": false
+  },
+  {
+   "from": "f3_core3_stairs",
+   "to": "f3_front_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_core3_stairs",
+   "to": "f3_core3_stairs",
+   "type": "stairs",
+   "accessible": false,
    "keycard": false
   },
   {
