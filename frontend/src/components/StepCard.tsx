@@ -1,5 +1,6 @@
 import { Icon } from './Icon'
 import type { CompassStatus } from '../hooks/useCompass'
+import { stepScript } from '../lib/script'
 import { relativeTurn } from '../lib/turn'
 import type { IndoorRoute, IndoorStep } from '../types'
 
@@ -24,9 +25,11 @@ const COMPASS_NOTE: Record<CompassStatus, string> = {
 interface Props {
   route: IndoorRoute; index: number; onChange: (i: number) => void
   heading: number | null; compass: CompassStatus; onCompass: () => void
+  /** Holding Back / Next reads that step aloud, plus the next ones when true. */
+  readMore?: boolean
 }
 
-export function StepCard({ route, index, onChange, heading, compass, onCompass }: Props) {
+export function StepCard({ route, index, onChange, heading, compass, onCompass, readMore = true }: Props) {
   const step = route.steps[index]
   if (!step) return null
   const base = ARROW[step.turn]
@@ -45,8 +48,8 @@ export function StepCard({ route, index, onChange, heading, compass, onCompass }
         <small>Step {index + 1} of {last + 1} · Floor {step.floor} · {COMPASS_NOTE[compass]}</small>
       </div>
       <div className="row">
-        <button disabled={index === 0} onClick={() => onChange(index - 1)}>Back</button>
-        <button disabled={index === last} onClick={() => onChange(index + 1)}>Next step</button>
+        <button disabled={index === 0} data-speak={index > 0 ? stepScript(route, index - 1, readMore) : undefined} onClick={() => onChange(index - 1)}>Back</button>
+        <button disabled={index === last} data-speak={index < last ? stepScript(route, index + 1, readMore) : undefined} onClick={() => onChange(index + 1)}>Next step</button>
         <button aria-pressed={compass === 'on' || compass === 'waiting'} onClick={onCompass}>
           {compass === 'on' || compass === 'waiting' ? 'Compass off' : 'Use compass'}
         </button>

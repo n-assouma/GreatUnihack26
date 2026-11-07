@@ -11,6 +11,7 @@ export interface Settings {
   use_location: boolean
   voice_speed: number        // 1 = normal; applied when audio is played, so it works for every voice
   more_instructions: boolean // read the whole journey / the next steps, not one instruction at a time
+  long_press_read: boolean   // hold a button or message to hear it read aloud
   high_contrast: boolean
   large_text: boolean
   demo_mode: boolean
@@ -26,6 +27,7 @@ export const DEFAULT_SETTINGS: Settings = {
   use_location: false,
   voice_speed: 1.2,
   more_instructions: true,
+  long_press_read: true,
   high_contrast: false,
   large_text: false,
   demo_mode: false,

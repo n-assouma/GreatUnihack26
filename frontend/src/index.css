@@ -333,3 +333,8 @@ input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px v
 
 .next-up { margin: 2px 0 0; font-size: .85rem; opacity: .92; }
 .next-up span { font-weight: 700; }
+
+/* Hold-to-hear: no phone callout menu, and a short flash when the hold is recognised */
+.shell button, .shell .msg { -webkit-touch-callout: none; }
+.shell button { -webkit-user-select: none; user-select: none; }
+.speak-flash { outline: 3px solid var(--brand) !important; outline-offset: 2px; }

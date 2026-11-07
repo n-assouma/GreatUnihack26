@@ -17,10 +17,15 @@ import { useGeolocation } from './hooks/useGeolocation'
 import { useSpeech } from './hooks/useSpeech'
 import { indoorUpcoming, outdoorScript, stepScript } from './lib/script'
 import { PRESET_COORDS, toContext, useSettings } from './hooks/useSettings'
-import type { ChatResponse } from './types'
+import type { ChatResponse, IndoorRoute, OutdoorRoute } from './types'
 
 // The map (and the Google Maps loader) is only downloaded when the Map tab is first opened.
 const MapPanel = lazy(() => import('./components/MapPanel').then((m) => ({ default: m.MapPanel })))
+
+// The backend re-sends the current routes on every 15 s tick. These keys tell a re-send apart from a new route,
+// so the step the student is on, the tab dots and the chat cards only react to a route that actually changed.
+const indoorKey = (r: IndoorRoute) => `${r.start_node}|${r.destination_id}|${r.accessible}|${r.steps.map((s) => s.instruction).join('/')}`
+const outdoorKey = (r: OutdoorRoute) => `${r.mode}|${r.polyline}`
 
 function sessionId(): string {
   try {
@@ -55,17 +60,20 @@ export default function App() {
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const compass = useCompass()
   const position = useGeolocation(settings.use_location)
-  // Speech: the mic sends what you said as a normal message, and replies are read aloud when voice is on.
-  // A question asked by voice from another tab gets its answer as a banner and out loud, since the chat is not on screen.
-  const voiceElsewhere = useRef(false)
+  // Speech: the app only talks when asked. A question asked with the mic is answered out loud; holding a button
+  // reads that button aloud; "Read everything aloud" (off by default) reads every reply and step automatically.
+  const askedByVoice = useRef(false)      // the message in flight came from the microphone
+  const askedOutsideChat = useRef(false)  // ...from a tab other than Chat, so the answer also needs a banner
+  const readNextReply = useRef(false)     // a suggestion chip was held down: read its answer aloud
   const speech = useSpeech({
     onFinal: (text) => {
-      if (tabRef.current !== 'chat') voiceElsewhere.current = true
+      askedByVoice.current = true
+      askedOutsideChat.current = tabRef.current !== 'chat'
       void send(text)
     },
     rate: settings.voice_speed,
   })
-  const voiceOn = settings.voice || settings.visual_impairment
+  const voiceOn = settings.voice
   const voiceOnRef = useRef(voiceOn)
   voiceOnRef.current = voiceOn
   const speakRef = useRef(speech.speak)
@@ -73,6 +81,9 @@ export default function App() {
   const moreRef = useRef(settings.more_instructions || settings.visual_impairment)
   moreRef.current = settings.more_instructions || settings.visual_impairment
   const routeForVoice = state?.ui.indoor_route ?? null
+  const shellRef = useRef<HTMLDivElement>(null)
+  const lastIndoor = useRef('')
+  const lastOutdoor = useRef('')
 
   // apply() runs from timers, so read the current tab through a ref instead of a stale closure.
   const tabRef = useRef(tab)
@@ -93,7 +104,48 @@ export default function App() {
     if (tab === 'map' || tab === 'plan') setNewRoute((n) => (n[tab] ? { ...n, [tab]: false } : n))
   }, [tab])
 
-  // Read each new indoor step aloud when the person moves between steps (the first step is in the reply).
+  // Hold any button (or a chat message) to hear it. The press still does its normal job when released.
+  // Buttons can say what to read with data-speak; suggestion chips (data-speak-reply) read the answer they get instead.
+  useEffect(() => {
+    const root = shellRef.current
+    if (!root || !settings.long_press_read) return
+    const HOLD_MS = 550
+    let timer = 0, startX = 0, startY = 0
+    const clear = () => window.clearTimeout(timer)
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0) return
+      const el = (e.target as HTMLElement).closest<HTMLElement>('[data-speak], button, .msg')
+      if (!el || el.closest('[data-no-speak]')) return
+      startX = e.clientX; startY = e.clientY
+      clear()
+      timer = window.setTimeout(() => {
+        navigator.vibrate?.(20)
+        el.classList.add('speak-flash')
+        window.setTimeout(() => el.classList.remove('speak-flash'), 400)
+        if (el.dataset.speakReply !== undefined) { readNextReply.current = true; return }
+        const text = el.dataset.speak || el.getAttribute('aria-label') || el.textContent?.trim()
+        if (text) void speakRef.current(text)
+      }, HOLD_MS)
+    }
+    const move = (e: PointerEvent) => { if (Math.hypot(e.clientX - startX, e.clientY - startY) > 12) clear() }
+    // Phones open a menu on long press; that would get in the way of holding to listen.
+    const menu = (e: Event) => { if ((e.target as HTMLElement).closest('button, .msg')) e.preventDefault() }
+    root.addEventListener('pointerdown', down)
+    root.addEventListener('pointermove', move)
+    root.addEventListener('pointerup', clear)
+    root.addEventListener('pointercancel', clear)
+    root.addEventListener('contextmenu', menu)
+    return () => {
+      clear()
+      root.removeEventListener('pointerdown', down)
+      root.removeEventListener('pointermove', move)
+      root.removeEventListener('pointerup', clear)
+      root.removeEventListener('pointercancel', clear)
+      root.removeEventListener('contextmenu', menu)
+    }
+  }, [settings.long_press_read, view])
+
+  // With "Read everything aloud" on, read each new indoor step when the person moves between steps.
   useEffect(() => {
     if (!voiceOnRef.current || step === 0) return
     if (routeForVoice) void speakRef.current(stepScript(routeForVoice, step, moreRef.current))
@@ -104,31 +156,44 @@ export default function App() {
     setView('main')
   }
 
-  // Merge non-null fields from a response into UI state.
+  // Merge non-null fields from a response into UI state (routes and the class survive replies that omit them).
   // fromTick: the assistant spoke on its own (reminder, hurry warning, mode switch), so also raise a toast.
   function apply(res: ChatResponse, fromTick = false) {
-    setState((prev) => ({ ...res, ui: { ...prev?.ui, ...Object.fromEntries(Object.entries(res.ui).filter(([, v]) => v != null)) } }))
-    if (res.ui.indoor_route) setStep(0)
+    setState((prev) => {
+      const ui = { ...prev?.ui, ...Object.fromEntries(Object.entries(res.ui).filter(([, v]) => v != null)) }
+      // Escalation is different: the backend sends null on purpose once it is answered or no longer applies,
+      // and outside the escalated phase there is nothing to ask. Never keep a stale "Shall I contact reception?".
+      if ('escalation' in res.ui) ui.escalation = res.ui.escalation ?? null
+      if (res.phase !== 'escalated' && !res.ui.escalation) ui.escalation = null
+      return { ...res, ui }
+    })
+    // Only a route that changed counts as new: re-sends must not reset the step or re-announce anything.
+    const i = res.ui.indoor_route && indoorKey(res.ui.indoor_route) !== lastIndoor.current ? res.ui.indoor_route : null
+    const o = res.ui.outdoor_route && outdoorKey(res.ui.outdoor_route) !== lastOutdoor.current ? res.ui.outdoor_route : null
+    if (res.ui.indoor_route) lastIndoor.current = indoorKey(res.ui.indoor_route)
+    if (res.ui.outdoor_route) lastOutdoor.current = outdoorKey(res.ui.outdoor_route)
+    if (i) setStep(0)
     // A route the user is not looking at gets a dot on its tab instead of yanking them to another screen.
-    if (res.ui.outdoor_route && tabRef.current !== 'map') setNewRoute((n) => ({ ...n, map: true }))
-    if (res.ui.indoor_route && tabRef.current !== 'plan') setNewRoute((n) => ({ ...n, plan: true }))
-    // A route in this reply becomes a card in the chat (and a button on the banner) that opens the right screen.
-    const o = res.ui.outdoor_route, i = res.ui.indoor_route
+    if (o && tabRef.current !== 'map') setNewRoute((n) => ({ ...n, map: true }))
+    if (i && tabRef.current !== 'plan') setNewRoute((n) => ({ ...n, plan: true }))
+    // A new route in this reply becomes a card in the chat (and a button on the banner) that opens the right screen.
     // Once the student is inside the building the floor plan is what matters, even if the reply still carries the bus route.
     const inside = res.phase === 'indoor' || res.phase === 'arrived'
     const mapCard: ChatMessage['action'] | undefined = o
-      ? { tab: 'map', title: o.summary, detail: `Leave ${new Date(o.leave_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · ${o.status === 'on_time' ? 'On time' : o.status === 'hurry' ? 'Hurry' : 'Running late'}` }
+      ? { tab: 'map', title: o.summary, detail: `Leave ${new Date(o.leave_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · ${o.status === 'on_time' ? 'On time' : o.status === 'hurry' ? 'Hurry' : 'Running late'}`, speak: `${o.summary}. ${outdoorScript(o)}` }
       : undefined
     const planCard: ChatMessage['action'] | undefined = i
-      ? { tab: 'plan', title: `Indoor route · ${i.steps.length} steps`, detail: `${Math.round(i.total_distance_m)} m${i.accessible ? ' · step-free' : ''}` }
+      ? { tab: 'plan', title: `Indoor route · ${i.steps.length} steps`, detail: `${Math.round(i.total_distance_m)} m${i.accessible ? ' · step-free' : ''}`, speak: stepScript(i, 0, true) }
       : undefined
     const action = fromTick ? undefined : inside ? (planCard ?? mapCard) : (mapCard ?? planCard)
-    const byVoiceElsewhere = !fromTick && voiceElsewhere.current && Boolean(res.reply)
-    if (byVoiceElsewhere) voiceElsewhere.current = false
-    if ((fromTick || byVoiceElsewhere) && res.reply) {
+    // Was this answer asked for out loud (mic) or by holding a suggestion? Then it is read aloud.
+    const spokenRequest = !fromTick && (askedByVoice.current || readNextReply.current)
+    const bannerForVoice = !fromTick && askedByVoice.current && askedOutsideChat.current
+    if (!fromTick) { askedByVoice.current = false; askedOutsideChat.current = false; readNextReply.current = false }
+    if ((fromTick || bannerForVoice) && res.reply) {
       setToast({ id: Date.now(), text: res.reply, agent: res.agent, action: action && { label: action.tab === 'map' ? 'Open map' : 'Open floor plan', tab: action.tab } })
     }
-    if (res.reply && (voiceOnRef.current || byVoiceElsewhere)) {
+    if (res.reply && (voiceOnRef.current || spokenRequest)) {
       // Say more than the on-screen reply: the rest of the bus journey, or the next indoor steps.
       let spoken = res.reply
       if (!fromTick && moreRef.current) {
@@ -186,9 +251,10 @@ export default function App() {
 
   // One-tap messages that match where the student is in the journey (the demo script, PLAN §7).
   const suggestions =
-    phase === 'indoor' || phase === 'arrived' ? ["I'm lost", 'I hurt my ankle']
+    phase === 'arrived' ? []
+    : phase === 'indoor' ? ["What's my next step?", 'I hurt my ankle']
     : phase === 'escalated' ? []
-    : outdoor ? ["I'm at the East entrance", "I've arrived", "I'm lost"]
+    : outdoor ? ["I'm at the East entrance", "I've arrived"]
     : state?.ui.next_class ? ["I'll take the bus", "I'll walk", 'How do I get to class?']
     : ['What is my next class?']
 
@@ -196,7 +262,7 @@ export default function App() {
   const presetMissing = settings.demo_mode && settings.location_preset !== 'gps' && PRESET_COORDS[settings.location_preset] === null
 
   return (
-    <div className="shell">
+    <div className="shell" ref={shellRef}>
       <Toast toast={toast} onDismiss={() => setToast(null)} onAction={setTab} />
       {/* Shown above every screen so a tab switch can never hide a request for help. */}
       {escalation && (
@@ -251,7 +317,7 @@ export default function App() {
         {tab === 'plan' && (
           <FloorPlanPanel
             route={indoor} step={step} onStep={setStep} heading={compass.heading} compass={compass.status}
-            onCompass={onCompass} pending={pending} onAsk={send}
+            onCompass={onCompass} pending={pending} onAsk={send} readMore={settings.more_instructions}
           />
         )}
         {tab === 'calendar' && (

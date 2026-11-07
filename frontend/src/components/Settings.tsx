@@ -92,12 +92,12 @@ export function Settings({ settings, onChange, onDone, onboarding, sample }: Pro
       />
       <Suggestion
         icon="eye" title="Describe things in more detail"
-        text="Longer spoken directions and replies read aloud, for blind or low-vision users."
+        text="More detailed directions for blind or low-vision users. Turn on Read everything aloud as well to hear them automatically."
         value={settings.visual_impairment} onChange={(v) => onChange({ visual_impairment: v })}
       />
       <Suggestion
-        icon="volume" title="Read replies aloud"
-        text="Hear each answer and each new step out loud. You can also tap the microphone in the chat and speak instead of typing."
+        icon="volume" title="Read everything aloud"
+        text="Off by default. When off, I only speak when you ask with the microphone, or when you hold a button down."
         value={settings.voice} onChange={(v) => onChange({ voice: v })}
       />
 
@@ -132,6 +132,11 @@ export function Settings({ settings, onChange, onDone, onboarding, sample }: Pro
           ))}
         </div>
       </div>
+      <Suggestion
+        icon="volume" title="Hold a button to hear it"
+        text="Press and hold any button or message to have it read aloud. A quick tap works as normal, silently."
+        value={settings.long_press_read} onChange={(v) => onChange({ long_press_read: v })}
+      />
       <Suggestion
         icon="volume" title="More instructions at a time"
         text="When it reads a route aloud, give the whole journey, or the next few steps, instead of one instruction at a time."

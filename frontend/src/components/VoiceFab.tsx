@@ -16,7 +16,7 @@ interface Props {
  */
 export function VoiceFab({ state, transcript, listening, error, onToggle, onStop }: Props) {
   return (
-    <div className="voice-float">
+    <div className="voice-float" data-no-speak>
       {state !== 'idle' && (
         <div className="voice-float-strip"><VoiceIndicator state={state} transcript={transcript} onStop={onStop} /></div>
       )}

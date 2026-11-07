@@ -9,7 +9,7 @@ export interface ChatMessage {
   agent?: AgentName
   guardrails?: GuardrailEvent[]
   /** A card under the message that jumps to the screen showing what the assistant just planned. */
-  action?: { tab: 'map' | 'plan'; title: string; detail: string }
+  action?: { tab: 'map' | 'plan'; title: string; detail: string; speak?: string }
 }
 
 export const MAX_INPUT_CHARS = 2000
@@ -82,11 +82,11 @@ export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, v
             <p className="chat-empty">Ask about your next class, your route, or where to go inside the building.</p>
           ))}
           {messages.map((m, i) => (
-            <div key={i} className={`msg msg-${m.role}`}>
+            <div key={i} className={`msg msg-${m.role}`} data-speak={m.text}>
               {m.agent && <span className="agent-tag">{m.agent}</span>}
               <p>{m.text}</p>
               {m.action && (
-                <button className="msg-action" onClick={() => onOpenTab(m.action!.tab)}>
+                <button className="msg-action" data-speak={m.action.speak} onClick={() => onOpenTab(m.action!.tab)}>
                   <Icon name={m.action.tab === 'map' ? 'bus' : 'layers'} size={22} />
                   <span className="msg-action-text"><strong>{m.action.title}</strong><span>{m.action.detail}</span></span>
                   <span className="msg-action-go">{m.action.tab === 'map' ? 'Open map' : 'Open floor plan'}</span>
@@ -106,7 +106,7 @@ export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, v
       {suggestions.length > 0 && (
         <div className="quick" role="group" aria-label="Suggested messages">
           {suggestions.map((s) => (
-            <button key={s} className="quick-btn" disabled={pending} onClick={() => onSend(s)}>{s}</button>
+            <button key={s} className="quick-btn" data-speak-reply disabled={pending} onClick={() => onSend(s)}>{s}</button>
           ))}
         </div>
       )}
@@ -117,7 +117,7 @@ export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, v
         />
         {mic?.supported && (
           <button
-            type="button" className="mic-btn" aria-pressed={mic.listening}
+            type="button" className="mic-btn" data-no-speak aria-pressed={mic.listening}
             aria-label={mic.listening ? 'Stop listening' : 'Speak your message'} onClick={mic.onToggle}
           >
             <Icon name="mic" size={20} />

@@ -155,7 +155,7 @@ export function MapPanel({ route, visible, pending, onAsk }: Props) {
           <p className="muted">Choose how you will travel and I will plan it from where you are.</p>
           <div className="quick">
             {["I'll take the bus", "I'll walk", 'How do I get to class?'].map((s) => (
-              <button key={s} className="quick-btn" disabled={pending} onClick={() => onAsk(s)}>{s}</button>
+              <button key={s} className="quick-btn" data-speak-reply disabled={pending} onClick={() => onAsk(s)}>{s}</button>
             ))}
           </div>
           {pending && <p className="muted" role="status">Planning your journey…</p>}

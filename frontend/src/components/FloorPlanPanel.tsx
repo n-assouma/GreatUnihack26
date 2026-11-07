@@ -156,10 +156,12 @@ interface Props {
   onCompass: () => void
   pending: boolean
   onAsk: (text: string) => void
+  /** Holding Next/Back reads the step and the ones after it. */
+  readMore: boolean
 }
 
 /** The Floor plan screen: floor tabs, the plan filling the screen (pinch / drag / zoom), and the current step. */
-export function FloorPlanPanel({ route, step, onStep, heading, compass, onCompass, pending, onAsk }: Props) {
+export function FloorPlanPanel({ route, step, onStep, heading, compass, onCompass, pending, onAsk, readMore }: Props) {
   const [building, setBuilding] = useState<BuildingSummary | null>(null)
   const [floor, setFloor] = useState<number | null>(null)
 
@@ -184,7 +186,7 @@ export function FloorPlanPanel({ route, step, onStep, heading, compass, onCompas
           <strong>No indoor route yet</strong>
           <p className="muted">Tell me where you are in the building and I will draw the way to your room.</p>
           <div className="quick">
-            <button className="quick-btn" disabled={pending} onClick={() => onAsk("I'm at the East entrance")}>I'm at the East entrance</button>
+            <button className="quick-btn" data-speak-reply disabled={pending} onClick={() => onAsk("I'm at the East entrance")}>I'm at the East entrance</button>
           </div>
           {pending && <p className="muted" role="status">Finding your route…</p>}
         </div>
@@ -221,7 +223,7 @@ export function FloorPlanPanel({ route, step, onStep, heading, compass, onCompas
           <p className="panel-empty">{building ? 'No route on this floor.' : 'Loading floor plan…'}</p>
         )}
       </div>
-      <StepCard route={route} index={step} onChange={onStep} heading={heading} compass={compass} onCompass={onCompass} />
+      <StepCard route={route} index={step} onChange={onStep} heading={heading} compass={compass} onCompass={onCompass} readMore={readMore} />
     </section>
   )
 }
