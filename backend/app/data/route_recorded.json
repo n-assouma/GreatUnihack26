@@ -6,49 +6,41 @@
           {
             "steps": [
               {
-                "staticDuration": "23s",
+                "staticDuration": "89s",
                 "navigationInstruction": {
                   "maneuver": "DEPART",
-                  "instructions": "Head south"
+                  "instructions": "Head west"
                 },
                 "travelMode": "WALK"
               },
               {
-                "staticDuration": "34s",
-                "navigationInstruction": {
-                  "maneuver": "TURN_LEFT",
-                  "instructions": "Turn left"
-                },
-                "travelMode": "WALK"
-              },
-              {
-                "staticDuration": "101s",
+                "staticDuration": "42s",
                 "navigationInstruction": {
                   "maneuver": "TURN_RIGHT",
-                  "instructions": "Turn right"
+                  "instructions": "Turn right toward Wilmslow Rd/A6010"
                 },
                 "travelMode": "WALK"
               },
               {
-                "staticDuration": "19s",
-                "navigationInstruction": {
-                  "maneuver": "TURN_LEFT",
-                  "instructions": "Turn left"
-                },
-                "travelMode": "WALK"
-              },
-              {
-                "staticDuration": "23s",
+                "staticDuration": "55s",
                 "navigationInstruction": {
                   "maneuver": "TURN_RIGHT",
-                  "instructions": "Turn right\nDestination will be on the left"
+                  "instructions": "Turn right toward Wilmslow Rd/A6010"
                 },
                 "travelMode": "WALK"
               },
               {
-                "staticDuration": "329s",
+                "staticDuration": "67s",
                 "navigationInstruction": {
-                  "instructions": "Bus towards Piccadilly Gardens"
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right onto Wilmslow Rd/A6010\nDestination will be on the left"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "830s",
+                "navigationInstruction": {
+                  "instructions": "Bus towards Middleton"
                 },
                 "transitDetails": {
                   "stopDetails": {
@@ -61,44 +53,44 @@
                         }
                       }
                     },
-                    "arrivalTime": "2026-11-09T09:50:35Z",
+                    "arrivalTime": "2026-11-09T09:51:12Z",
                     "departureStop": {
-                      "name": "St Mary's (Stop B)",
+                      "name": "Langley Road",
                       "location": {
                         "latLng": {
-                          "latitude": 53.458889899999996,
-                          "longitude": -2.2276369
+                          "latitude": 53.4454274,
+                          "longitude": -2.2181306999999997
                         }
                       }
                     },
-                    "departureTime": "2026-11-09T09:45:06Z"
+                    "departureTime": "2026-11-09T09:37:22Z"
                   },
                   "localizedValues": {
                     "arrivalTime": {
                       "time": {
-                        "text": "9:50\u202fAM"
+                        "text": "9:51\u202fAM"
                       },
                       "timeZone": "Europe/London"
                     },
                     "departureTime": {
                       "time": {
-                        "text": "9:45\u202fAM"
+                        "text": "9:37\u202fAM"
                       },
                       "timeZone": "Europe/London"
                     }
                   },
-                  "headsign": "Piccadilly Gardens",
+                  "headsign": "Middleton",
                   "transitLine": {
                     "agencies": [
                       {
                         "name": "Bee Network",
-                        "phoneNumber": "+44 343 222 1234",
-                        "uri": "https://www.traveline.info/"
+                        "phoneNumber": "+44 161 228 7811",
+                        "uri": "https://beenetwork.com/"
                       }
                     ],
-                    "name": "West Didsbury - Piccadilly Gardens",
+                    "name": "Sale - Middleton",
                     "color": "#f2d04a",
-                    "nameShort": "143",
+                    "nameShort": "41",
                     "textColor": "#000000",
                     "vehicle": {
                       "name": {
@@ -108,7 +100,7 @@
                       "iconUri": "//maps.gstatic.com/mapfiles/transit/iw2/6/bus2.png"
                     }
                   },
-                  "stopCount": 3
+                  "stopCount": 8
                 },
                 "travelMode": "TRANSIT"
               },
@@ -147,9 +139,9 @@
             ]
           }
         ],
-        "duration": "730s",
+        "duration": "1282s",
         "polyline": {
-          "encodedPolyline": "wkheIxrrLt@OM}Bp@_B`@u@N{@h@cAIcAn@_@EYGa@{CnAcDbA_Br@gBzA{CxB_@RaB|AoAfB}BnCmHnI{CvCaGnEDTHKe@Z]\\eBxAOCMN}@_E]JMc@IO"
+          "encodedPolyline": "}oeeIluoLB~BHxBDBf@CBpAn@EHbE{@UwASEz@Bk@iAGSFgCr@y@f@a@f@}CnEs@h@kChA{Bv@cAl@iFbEcBpAuEpBuAn@KTeAdAy@bAGBYd@_BrBi@r@u@^OBCAgCz@}Bz@_CxAmChBOTeAr@YFiDjBaDrAcDbA_Br@gBzA{CxB_@RaB|AoAfB}BnCmHnI{CvCaGnEDTHKe@Z]\\eBxAOCMN}@_E]JMc@IO"
         }
       }
     ]

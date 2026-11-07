@@ -10,7 +10,11 @@ BUILDING_NAME      = "Nancy Rothwell Building"
 BUILDING_LAT_LNG   = 53.469093, -2.234591  # building centre (Wikipedia / DBpedia)
 GEOFENCE_RADIUS_M  = 120                  # large building: inside this → indoor mode
 OUTSIDE_EAST_LAT_LNG = TBD              # human drops a pin just outside the East entrance (Rumford Street)
-DEMO_HOME_LAT_LNG  = TBD                  # human picks one real student address (see PLAN §5 D3)
+                                          # not blocking: any point within GEOFENCE_RADIUS_M triggers indoor
+                                          # mode, so the building centre above works for the demo
+DEMO_HOME_LAT_LNG  = 53.445273, -2.215431 # Ashburne Hall, Fallowfield — address chosen by Nael on the
+                                          # board, coordinates resolved by the Google Routes API (D3).
+                                          # ~2.9 km out; real journey is bus 41, ~21 min
 BACKEND_PORT       = 8000
 FRONTEND_PORT      = 5173                  # Vite proxies /api and /static → :8000
 ```
@@ -203,7 +207,12 @@ icalendar networkx Pillow pytest
 Frontend (Agent 1): `react react-dom @vis.gl/react-google-maps uuid` + Vite TS template.
 
 ## 7. Environment variables
-`backend/.env`: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` (optional), `LLM_MODEL=anthropic/claude-sonnet-5-5`,
-`GUARD_MODEL=anthropic/claude-haiku-5-5`, `GOOGLE_MAPS_API_KEY`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`,
+`backend/.env`: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` (optional), `LLM_MODEL=anthropic/claude-sonnet-5`,
+`GUARD_MODEL=anthropic/claude-haiku-4-5`, `GOOGLE_MAPS_API_KEY`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`,
 `MOCK_LLM=0|1` (D6 fallback), `ROUTE_REPLAY=0|1` (D5 safety net)
 `frontend/.env`: `VITE_GOOGLE_MAPS_API_KEY`, `VITE_USE_MOCKS=0|1`
+
+> Model ids corrected on Amir's instruction (was `claude-sonnet-5-5` / `claude-haiku-5-5`, neither of
+> which exists). litellm does **not** validate model ids — it reports the invalid ones as real, so the
+> failure would have been a 404 on the first chat message during the demo. Copy from
+> `backend/.env.example`, which carries the same values. Variable names are unchanged.
