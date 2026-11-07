@@ -27,6 +27,14 @@ const MapPanel = lazy(() => import('./components/MapPanel').then((m) => ({ defau
 const indoorKey = (r: IndoorRoute) => `${r.start_node}|${r.destination_id}|${r.accessible}|${r.steps.map((s) => s.instruction).join('/')}`
 const outdoorKey = (r: OutdoorRoute) => `${r.mode}|${r.polyline}`
 
+// What the student just asked for decides which screen to show, even when the backend re-sends a route they already had.
+// Inside the building (a room, the lifts, "I'm at the East entrance") -> Floor plan.
+// Between buildings (the bus, walking there, getting to a building) -> Map.
+const SAYS_POSITION = /\b(i'?m|i am|we'?re|we are)\b.*\b(at|in|by|near|inside|outside)\b|\bentrance\b|\barrived\b|\bi'?ve (got|made it|reached)\b/i
+const ASKS_WAY = /\b(\w+ me (to|there)|take me|bring me|guide me|show me|go(ing)? to|get(ting)? to|head(ing)? to|way to|directions?|where('?s| is| are)|find|navigate|how (do|can|should) i get)\b/i
+const MENTIONS_ROOM = /\b(room|theatre|theater|lecture|lab|toilets?|lifts?|elevators?|stairs|floor|caf[eé]|reception|classroom|[a-z]{1,2}\.\d{3}|\d[a-z]\.\d{3})\b/i
+const MENTIONS_OUTSIDE = /\b(bus|tram|train|walk|run|journey|building|campus|station|home|halls?|street|road)\b/i
+
 // Left-to-right order of the tabs, so a screen change can slide in from the side it is coming from.
 const TAB_ORDER: Tab[] = ['chat', 'map', 'plan', 'calendar', 'settings']
 
@@ -87,6 +95,7 @@ export default function App() {
   const routeForVoice = state?.ui.indoor_route ?? null
   const shellRef = useRef<HTMLDivElement>(null)
   const lastIndoor = useRef('')
+  const lastSent = useRef('')  // the student's latest message, read when its reply arrives
   const lastOutdoor = useRef('')
 
   // apply() runs from timers, so read the current tab through a ref instead of a stale closure.
@@ -186,7 +195,10 @@ export default function App() {
     const o = res.ui.outdoor_route && outdoorKey(res.ui.outdoor_route) !== lastOutdoor.current ? res.ui.outdoor_route : null
     if (res.ui.indoor_route) lastIndoor.current = indoorKey(res.ui.indoor_route)
     if (res.ui.outdoor_route) lastOutdoor.current = outdoorKey(res.ui.outdoor_route)
-    if (i) setStep(0)
+    const said = fromTick ? '' : lastSent.current
+    const statedPosition = SAYS_POSITION.test(said)
+    // A new route, or the student telling us where they are, starts the steps again from the beginning.
+    if (i || (statedPosition && res.ui.indoor_route)) setStep(0)
     // A route the user is not looking at gets a dot on its tab instead of yanking them to another screen.
     if (o && tabRef.current !== 'map') setNewRoute((n) => ({ ...n, map: true }))
     if (i && tabRef.current !== 'plan') setNewRoute((n) => ({ ...n, plan: true }))
@@ -208,9 +220,17 @@ export default function App() {
     const prevPhase = phaseRef.current
     phaseRef.current = res.phase
     const justArrived = inside && prevPhase !== null && prevPhase !== 'indoor' && prevPhase !== 'arrived'
+    const wantsIndoor = statedPosition || (ASKS_WAY.test(said) && MENTIONS_ROOM.test(said))
+    const wantsOutdoor = MENTIONS_OUTSIDE.test(said) && (ASKS_WAY.test(said) || /\b(take|catch|i'?ll|i will)\b/i.test(said))
+    // Switch on what was asked for, even before the backend has a route (it may first ask where they are):
+    // the Floor plan and Map screens both show a helpful empty state until the route arrives.
     const autoTab: Tab | null = !autoRef.current || res.phase === 'escalated' ? null
-      : inside && (i || justArrived) ? 'plan'
-      : !inside && o ? 'map'
+      // Inside the building: a room, telling us where they are, a new indoor route, or having just arrived.
+      : inside && (wantsIndoor || justArrived || i) ? 'plan'
+      // Not inside yet: any journey, or a room (they need to reach the building first), or a new bus route.
+      : !inside && (wantsOutdoor || wantsIndoor || o) ? 'map'
+      // Inside but heading to another building.
+      : inside && wantsOutdoor && res.ui.outdoor_route ? 'map'
       : null
     const from = tabRef.current
     const leavingChat = autoTab !== null && autoTab !== from && from === 'chat'
@@ -237,6 +257,7 @@ export default function App() {
 
   async function send(text: string) {
     speech.cancel() // a new message cuts off whatever is being read out
+    lastSent.current = text
     setMessages((m) => [...m, { role: 'user' as const, text }].slice(-MAX_MESSAGES))
     setPending(true)
     try {
