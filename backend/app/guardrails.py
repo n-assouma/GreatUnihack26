@@ -101,6 +101,19 @@ def _contains(text: str, words: tuple[str, ...]) -> bool:
     return bool(_matcher(words).search(text))
 
 
+def _should_escalate_lost(state: SessionState) -> bool:
+    """Offer a human once the student has twice told us they are lost, or told us
+    once and we still cannot place them.
+
+    Never on failed locates alone: with the real building graph "by the lifts" is a
+    perfectly reasonable answer that comes back ambiguous, and asking "which lift?"
+    twice must not turn into an unprompted offer to call reception.
+    """
+    if state.said_lost_count >= 2:
+        return True
+    return state.said_lost_count >= 1 and state.lost_count >= 2
+
+
 class InputVerdict:
     """What the input stage decided."""
 
@@ -109,10 +122,14 @@ class InputVerdict:
         events: list[GuardrailEvent],
         refusal: str | None = None,
         escalate: str | None = None,
+        reask_position: bool = False,
     ) -> None:
         self.events = events
         self.refusal = refusal  # set => return this reply immediately, skip the agents
         self.escalate = escalate  # "lost" | "injured" | "user_request"
+        # The student is lost but not yet distressed enough for a human: re-anchor
+        # them by asking what they can see, rather than repeating the last step.
+        self.reask_position = reask_position
 
 
 def input_guardrail(message: str, state: SessionState) -> InputVerdict:
@@ -157,20 +174,21 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
 
     if _contains(text, _LOST_WORDS):
         state.lost_count += 1
-        if state.lost_count >= 2:
+        state.said_lost_count += 1
+        if _should_escalate_lost(state):
             events.append(
                 _event(
                     "input",
                     "lost",
                     "escalated",
-                    f"User has said they are lost {state.lost_count} times.",
+                    f"User has said they are lost {state.said_lost_count} times.",
                 )
             )
             return InputVerdict(events, escalate="lost")
         events.append(
             _event("input", "lost", "modified", "User is lost; asking where they are.")
         )
-        return InputVerdict(events)
+        return InputVerdict(events, reask_position=True)
 
     if _contains(text, _OFF_TOPIC_WORDS):
         events.append(_event("input", "off_topic", "blocked", "Off-topic request refused."))
@@ -200,7 +218,8 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
         return InputVerdict(events, escalate="injured")
     if category == "lost":
         state.lost_count += 1
-        if state.lost_count >= 2:
+        state.said_lost_count += 1
+        if _should_escalate_lost(state):
             events.append(
                 _event("input", "lost", "escalated", "Classifier flagged the user as lost twice.")
             )
