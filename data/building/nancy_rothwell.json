@@ -347,6 +347,30 @@
    ]
   },
   {
+   "id": "f1_theatre_b_door",
+   "floor": 1,
+   "x": 1385,
+   "y": 702,
+   "type": "junction",
+   "label": "Door of Lecture Theatre B",
+   "aliases": []
+  },
+  {
+   "id": "THEATRE_B",
+   "floor": 1,
+   "x": 1420,
+   "y": 790,
+   "type": "room",
+   "label": "Lecture Theatre B",
+   "aliases": [
+    "lecture theatre b",
+    "theatre b",
+    "tiered lecture theatre b",
+    "2a.041",
+    "lt b"
+   ]
+  },
+  {
    "id": "f2_corr_core1",
    "floor": 2,
    "x": 265,
@@ -429,6 +453,67 @@
     "core 4 lift",
     "core 4 lifts"
    ]
+  },
+  {
+   "id": "f2_hub",
+   "floor": 2,
+   "x": 750,
+   "y": 705,
+   "type": "junction",
+   "label": "Second floor corridor by the Connect Cafe",
+   "aliases": []
+  },
+  {
+   "id": "f2_cafe_connect",
+   "floor": 2,
+   "x": 752,
+   "y": 648,
+   "type": "landmark",
+   "label": "Connect Cafe",
+   "aliases": [
+    "cafe",
+    "coffee",
+    "connect cafe",
+    "link bridge cafe"
+   ]
+  },
+  {
+   "id": "f2_computer_cluster",
+   "floor": 2,
+   "x": 748,
+   "y": 800,
+   "type": "landmark",
+   "label": "Computer Cluster (2A.021, 2A.024)",
+   "aliases": [
+    "computer cluster",
+    "computers",
+    "computer room",
+    "pc cluster",
+    "2a.021",
+    "2a.024"
+   ]
+  },
+  {
+   "id": "f2_study_informal",
+   "floor": 2,
+   "x": 990,
+   "y": 745,
+   "type": "landmark",
+   "label": "Informal study area",
+   "aliases": [
+    "informal study",
+    "study area",
+    "study space"
+   ]
+  },
+  {
+   "id": "f2_corr_study",
+   "floor": 2,
+   "x": 990,
+   "y": 705,
+   "type": "junction",
+   "label": "Second floor corridor by the informal study area",
+   "aliases": []
   },
   {
    "id": "f3_core1_lift",
@@ -881,6 +966,20 @@
    "keycard": false
   },
   {
+   "from": "f1_corr_core4",
+   "to": "f1_theatre_b_door",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_theatre_b_door",
+   "to": "THEATRE_B",
+   "type": "door",
+   "accessible": true,
+   "keycard": false
+  },
+  {
    "from": "f2_corr_core1",
    "to": "f2_core1_lift",
    "type": "corridor",
@@ -909,6 +1008,27 @@
    "keycard": false
   },
   {
+   "from": "f2_hub",
+   "to": "f2_cafe_connect",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_hub",
+   "to": "f2_computer_cluster",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_corr_study",
+   "to": "f2_study_informal",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
    "from": "f2_corr_core1",
    "to": "f2_corr_core2",
    "type": "corridor",
@@ -917,6 +1037,13 @@
   },
   {
    "from": "f2_corr_core2",
+   "to": "f2_hub",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_hub",
    "to": "f2_corr_core3",
    "type": "corridor",
    "accessible": true,
@@ -924,6 +1051,13 @@
   },
   {
    "from": "f2_corr_core3",
+   "to": "f2_corr_study",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_corr_study",
    "to": "f2_corr_core4",
    "type": "corridor",
    "accessible": true,
