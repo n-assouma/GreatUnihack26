@@ -223,6 +223,30 @@ def escalation_confirm(req: EscalationConfirmRequest) -> ChatResponse:
     return _response(state, escalation["message"])
 
 
+@app.get("/api/timetable")
+def get_timetable(demo_time: str | None = None) -> dict:
+    """The week's classes, for the Calendar page (A1's request on the board).
+
+    Additive: no existing response shape changes. Pending a human adding the row to
+    CONTRACTS §3.
+    """
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    if demo_time:
+        try:
+            parsed = datetime.fromisoformat(demo_time)
+            now = parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
+    classes = timetable.week(now)
+    return {
+        "classes": classes,
+        "next_class": timetable.next_class(now),
+        "now": now.isoformat(),
+    }
+
+
 @app.get("/api/escalations")
 def escalations() -> dict:
     """Tiny staff view for the judges: every help request logged this run."""

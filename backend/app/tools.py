@@ -313,10 +313,13 @@ def set_facing(state: SessionState, text: str) -> dict:
     return {"ok": True, "facing_deg": bearing}
 
 
-def plan_indoor_route(state: SessionState, start: str, destination: str = "") -> dict:
-    # F5 is enforced in code, not in the prompt: tool_guardrail has already forced
-    # accessible=True for a user who cannot use stairs, and we re-assert it here.
-    accessible = bool(state.no_stairs)
+def plan_indoor_route(
+    state: SessionState, start: str, destination: str = "", accessible: bool = False
+) -> dict:
+    # F5 is enforced in code, not in the prompt. `accessible` is what the tool
+    # guardrail decided; OR-ing it with the session means a no-stairs user gets an
+    # accessible route even if that stage were ever bypassed.
+    accessible = bool(accessible or state.no_stairs)
     heading = state.heading if state.heading_source in ("compass", "spoken") else None
 
     try:

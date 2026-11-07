@@ -71,6 +71,24 @@ def next_class(now: datetime) -> dict | None:
     return candidates[0][1]
 
 
+def week(now: datetime) -> list[dict]:
+    """Every class in the next 7 days, earliest first — for the Calendar page."""
+    entries = _load_entries()
+    found: list[tuple[datetime, dict]] = []
+    for offset in range(LOOKAHEAD_DAYS):
+        day = now.date() + timedelta(days=offset)
+        for entry in entries:
+            if entry.get("weekday") != day.weekday():
+                continue
+            start = _at(day, entry.get("start", ""), now.tzinfo)
+            end = _at(day, entry.get("end", ""), now.tzinfo)
+            if start is None or end is None:
+                continue
+            found.append((start, _to_class_info(entry, start, end)))
+    found.sort(key=lambda pair: pair[0])
+    return [class_info for _, class_info in found]
+
+
 def class_id(class_info: dict | None) -> str | None:
     """Stable id for "have we already reminded them about this class?"."""
     if not class_info:

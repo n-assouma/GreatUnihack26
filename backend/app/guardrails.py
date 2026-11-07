@@ -12,6 +12,7 @@ Accessibility is enforced here in code, never by asking the prompt nicely (PLAN 
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 from . import llm
 from .models import GuardrailEvent
@@ -53,7 +54,9 @@ _INJURY_WORDS = (
 _HELP_WORDS = (
     "help me", "i need help", "emergency", "call security", "get security",
     "ambulance", "a person", "someone to help", "a human", "member of staff",
-    "talk to someone", "999",
+    # "999" alone is far too eager — it matches any room number or time containing
+    # it (room 9Z.999 was escalating to security). Only a calling phrase counts.
+    "talk to someone", "call 999", "ring 999", "dial 999", "phone 999",
 )
 _OFF_TOPIC_WORDS = (
     "weather", "pizza", "football", "bitcoin", "crypto", "write my essay",
@@ -81,8 +84,21 @@ def _event(stage: str, rule: str, action: str, message: str) -> GuardrailEvent:
     return GuardrailEvent(stage=stage, rule=rule, action=action, message=message)
 
 
+@lru_cache(maxsize=None)
+def _matcher(words: tuple[str, ...]) -> re.Pattern[str]:
+    """Whole-word matcher for a keyword list.
+
+    Plain substring matching is not safe here: "kill" matches "skills", so
+    "help me with my machine learning skills" would be refused as unsafe, and "999"
+    matched room numbers. Word boundaries make each phrase match only as itself.
+    """
+    return re.compile(
+        "|".join(rf"(?<!\w){re.escape(word)}(?!\w)" for word in words), re.IGNORECASE
+    )
+
+
 def _contains(text: str, words: tuple[str, ...]) -> bool:
-    return any(word in text for word in words)
+    return bool(_matcher(words).search(text))
 
 
 class InputVerdict:
