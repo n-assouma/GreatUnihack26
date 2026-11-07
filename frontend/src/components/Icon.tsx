@@ -18,6 +18,8 @@ const PATHS = {
   text: <path d="M4 7V5h16v2M12 5v14M9 19h6" />,
   mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3" /></>,
   stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
+  map: <><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z" /><path d="M9 4v14M15 6v14" /></>,
+  layers: <><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></>,
   arrow: <path d="M12 19V5M6 11l6-6 6 6" />,
 } satisfies Record<string, ReactNode>
 

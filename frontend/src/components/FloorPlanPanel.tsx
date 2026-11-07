@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import * as api from '../api'
+import type { CompassStatus } from '../hooks/useCompass'
 import type { BuildingSummary, FloorSegment, IndoorRoute } from '../types'
+import { Icon } from './Icon'
+import { StepCard } from './StepCard'
 
 interface View { x: number; y: number; k: number }
 
@@ -144,37 +147,50 @@ function PlanView({ segment, width, height, here, interactive, label }: PlanView
   )
 }
 
-interface Props { route: IndoorRoute; step: number; onStep: (i: number) => void }
+interface Props {
+  route: IndoorRoute | null
+  step: number
+  onStep: (i: number) => void
+  heading: number | null
+  compass: CompassStatus
+  onCompass: () => void
+  pending: boolean
+  onAsk: (text: string) => void
+}
 
-export function FloorPlanPanel({ route, step, onStep }: Props) {
+/** The Floor plan screen: floor tabs, the plan filling the screen (pinch / drag / zoom), and the current step. */
+export function FloorPlanPanel({ route, step, onStep, heading, compass, onCompass, pending, onAsk }: Props) {
   const [building, setBuilding] = useState<BuildingSummary | null>(null)
   const [floor, setFloor] = useState<number | null>(null)
-  const [open, setOpen] = useState(false)
-  const opener = useRef<HTMLElement | null>(null)
-  const modal = useRef<HTMLDivElement>(null)
-
-  // Remember the button that was pressed: scripted and Safari clicks do not move document.activeElement.
-  function openModal(e: React.MouseEvent<HTMLElement>) { opener.current = e.currentTarget; setOpen(true) }
-  function closeModal() { setOpen(false); opener.current?.focus() }
 
   useEffect(() => { void api.getBuilding().then(setBuilding) }, [])
 
   // Follow the floor of the current step; the user can still pick another tab afterwards.
   // Pass-through floors are not in segments, so fall back to the nearest floor that is drawn.
-  const stepFloor = route.steps[step]?.floor
+  const stepFloor = route?.steps[step]?.floor
+  const segments = route?.segments
   useEffect(() => {
-    if (stepFloor == null) return
-    const floors = route.segments.map((s) => s.floor)
+    if (stepFloor == null || !segments || segments.length === 0) return
+    const floors = segments.map((s) => s.floor)
     const nearest = floors.reduce((best, f) => (Math.abs(f - stepFloor) < Math.abs(best - stepFloor) ? f : best), floors[0])
     setFloor(floors.includes(stepFloor) ? stepFloor : nearest)
-  }, [stepFloor, route.segments])
+  }, [stepFloor, segments])
 
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  if (!route) {
+    return (
+      <section className="app" aria-label="Floor plan">
+        <div className="empty-state card">
+          <Icon name="layers" size={32} />
+          <strong>No indoor route yet</strong>
+          <p className="muted">Tell me where you are in the building and I will draw the way to your room.</p>
+          <div className="quick">
+            <button className="quick-btn" disabled={pending} onClick={() => onAsk("I'm at the East entrance")}>I'm at the East entrance</button>
+          </div>
+          {pending && <p className="muted" role="status">Finding your route…</p>}
+        </div>
+      </section>
+    )
+  }
 
   const segment = route.segments.find((s) => s.floor === floor)
   const info = building?.floors.find((f) => f.floor === floor)
@@ -186,69 +202,26 @@ export function FloorPlanPanel({ route, step, onStep }: Props) {
     if (i >= 0) here = segment.points[Math.min(i, segment.points.length - 1)]
   }
 
-  const tabs = (
-    <div className="panel-tabs" role="tablist" aria-label="Floors">
-      {route.segments.map((s) => (
-        <button key={s.floor} role="tab" aria-selected={s.floor === floor} onClick={() => setFloor(s.floor)}>
-          {floorLabel(s.floor)}
-        </button>
-      ))}
-    </div>
-  )
-
-  const view = (interactive: boolean) =>
-    segment && info ? (
-      <PlanView
-        segment={segment} width={info.width} height={info.height} here={here} interactive={interactive}
-        label={`${info.label} floor plan with your route`}
-      />
-    ) : (
-      <p className="panel-empty">{building ? 'No route on this floor.' : 'Loading floor plan…'}</p>
-    )
-
-  const current = route.steps[step]
-
-  // Keep Tab inside the full-screen view while it is open.
-  function trapTab(e: React.KeyboardEvent) {
-    if (e.key !== 'Tab' || !modal.current) return
-    const items = [...modal.current.querySelectorAll<HTMLElement>('button:not(:disabled)')]
-    if (items.length === 0) return
-    const first = items[0], last = items[items.length - 1]
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
-  }
-
   return (
-    <>
-      <section className="floorplan">
-        <div className="plan-inline">
-          {view(false)}
-          <button className="plan-open" onClick={openModal} aria-label="Open larger floor plan" />
-          <div className="plan-overlay">
-            {tabs}
-            <button onClick={openModal}>Enlarge</button>
-          </div>
-        </div>
-      </section>
-
-      {open && (
-        <div className="plan-modal" role="dialog" aria-modal="true" aria-label="Floor plan" ref={modal} onKeyDown={trapTab}>
-          <header className="floor-head">
-            {tabs}
-            <button onClick={closeModal} autoFocus>Close</button>
-          </header>
-          <div className="plan-modal-body">{view(true)}</div>
-          {current && (
-            <footer className="plan-step">
-              <p><strong>Step {step + 1} of {route.steps.length}</strong> · {current.instruction}</p>
-              <div className="row">
-                <button disabled={step === 0} onClick={() => onStep(step - 1)}>Back</button>
-                <button disabled={step === route.steps.length - 1} onClick={() => onStep(step + 1)}>Next step</button>
-              </div>
-            </footer>
-          )}
-        </div>
-      )}
-    </>
+    <section className="app plan-screen" aria-label="Floor plan">
+      <div className="panel-tabs" role="tablist" aria-label="Floors">
+        {route.segments.map((s) => (
+          <button key={s.floor} role="tab" aria-selected={s.floor === floor} onClick={() => setFloor(s.floor)}>
+            {floorLabel(s.floor)}
+          </button>
+        ))}
+      </div>
+      <div className="plan-stage">
+        {segment && info ? (
+          <PlanView
+            segment={segment} width={info.width} height={info.height} here={here} interactive
+            label={`${info.label} floor plan with your route`}
+          />
+        ) : (
+          <p className="panel-empty">{building ? 'No route on this floor.' : 'Loading floor plan…'}</p>
+        )}
+      </div>
+      <StepCard route={route} index={step} onChange={onStep} heading={heading} compass={compass} onCompass={onCompass} />
+    </section>
   )
 }

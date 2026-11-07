@@ -278,3 +278,30 @@ input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px v
 .map-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line); }
 .map-sheet .journey-summary { border: 0; padding: 0; background: none; }
 .skeleton { height: 170px; border-radius: 12px; background: var(--line); animation: blink 1.4s ease-in-out infinite; }
+
+/* Separate screens: Chat, Map, Floor plan. Each fills the height of the phone. */
+.tabpane { height: 100%; }
+.tabpane[hidden] { display: none; }
+.app { overflow-y: auto; }
+.chat { min-height: 0; }
+.nav-item { position: relative; max-width: none; font-size: .7rem; padding: 4px 2px; }
+.nav-dot { position: absolute; top: 6px; left: calc(50% + 8px); width: 10px; height: 10px; border-radius: 50%; background: var(--warn); border: 2px solid var(--surface); }
+
+.step-strip { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 14px; text-align: left; border-radius: 14px; border: 1px solid var(--brand); background: var(--brand-soft); color: var(--fg); }
+.strip-text { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 500; font-size: .92rem; line-height: 1.3; }
+.strip-go { flex: none; font-size: .8rem; font-weight: 700; color: var(--brand); }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; margin: auto 0; padding: 24px 16px; color: var(--brand); }
+.empty-state strong { color: var(--fg); font-size: 1.1rem; }
+.empty-state p { margin: 0; max-width: 32ch; }
+.empty-state .quick { flex-wrap: wrap; justify-content: center; overflow: visible; }
+
+.mappage .map-box { flex: 1; min-height: 220px; height: auto; }
+.plan-stage { position: relative; flex: 1; min-height: 220px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #d9dcd6; }
+.plan-screen .step-card { flex: none; }
+
+.steps-sheet { flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.steps-sheet summary { display: flex; align-items: center; min-height: 48px; padding: 0 14px; font-weight: 700; cursor: pointer; }
+.steps-sheet .timeline { max-height: 34dvh; overflow-y: auto; padding: 0 14px 6px; }
+
+.escalation { margin: 8px 16px 0; }

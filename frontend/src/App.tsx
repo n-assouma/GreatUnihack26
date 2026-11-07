@@ -4,14 +4,14 @@ import * as api from './api'
 import { CalendarPage } from './components/CalendarPage'
 import { ChatPanel, type ChatMessage } from './components/ChatPanel'
 import { FloorPlanPanel } from './components/FloorPlanPanel'
+import { Icon } from './components/Icon'
 import { NavBar, type Tab } from './components/NavBar'
 import { Settings } from './components/Settings'
 import { StatusBar } from './components/StatusBar'
-import { StepCard } from './components/StepCard'
 import { Toast, type ToastMessage } from './components/Toast'
+import { Welcome } from './components/Welcome'
 import { useCompass } from './hooks/useCompass'
 import { useGeolocation } from './hooks/useGeolocation'
-import { Welcome } from './components/Welcome'
 import { PRESET_COORDS, toContext, useSettings } from './hooks/useSettings'
 import type { ChatResponse } from './types'
 
@@ -47,11 +47,14 @@ export default function App() {
   const [step, setStep] = useState(0)
   const [pending, setPending] = useState(false)
   const [mapOpened, setMapOpened] = useState(false)
+  const [newRoute, setNewRoute] = useState({ map: false, plan: false })
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const compass = useCompass()
   const position = useGeolocation(settings.use_location)
-  const [panel, setPanel] = useState<'map' | 'floorplan' | 'hide'>('hide')
-  const lastSuggested = useRef<string | null>(null)
+
+  // apply() runs from timers, so read the current tab through a ref instead of a stale closure.
+  const tabRef = useRef(tab)
+  tabRef.current = tab
 
   const context = toContext(settings, step, compass.heading, position)
 
@@ -62,19 +65,25 @@ export default function App() {
     if (settings.large_text) root.dataset.text = 'large'; else delete root.dataset.text
   }, [settings.high_contrast, settings.large_text])
 
+  // Opening the Map tab loads the map once; visiting a tab clears its "new route" dot.
+  useEffect(() => {
+    if (tab === 'map') setMapOpened(true)
+    if (tab === 'map' || tab === 'plan') setNewRoute((n) => (n[tab] ? { ...n, [tab]: false } : n))
+  }, [tab])
+
   function finishSetup() {
     try { localStorage.setItem('onboarded', '1') } catch { /* ignore */ }
     setView('main')
   }
 
-  // Merge non-null fields from a response into UI state; open the panel only when the suggestion changes.
+  // Merge non-null fields from a response into UI state.
   // fromTick: the assistant spoke on its own (reminder, hurry warning, mode switch), so also raise a toast.
   function apply(res: ChatResponse, fromTick = false) {
     setState((prev) => ({ ...res, ui: { ...prev?.ui, ...Object.fromEntries(Object.entries(res.ui).filter(([, v]) => v != null)) } }))
     if (res.ui.indoor_route) setStep(0)
-    const suggestion = res.ui.open_panel ?? null
-    if (suggestion && suggestion !== lastSuggested.current) setPanel(suggestion)
-    lastSuggested.current = suggestion
+    // A route the user is not looking at gets a dot on its tab instead of yanking them to another screen.
+    if (res.ui.outdoor_route && tabRef.current !== 'map') setNewRoute((n) => ({ ...n, map: true }))
+    if (res.ui.indoor_route && tabRef.current !== 'plan') setNewRoute((n) => ({ ...n, plan: true }))
     if (fromTick && res.reply) setToast({ id: Date.now(), text: res.reply, agent: res.agent })
     if (res.reply) setMessages((m) => [...m, { role: 'assistant' as const, text: res.reply!, agent: res.agent, guardrails: res.guardrails }].slice(-MAX_MESSAGES))
   }
@@ -108,73 +117,84 @@ export default function App() {
     return () => clearInterval(id)
   }, [view, sid]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Every hook is above this line: returning early below must never change the number of hooks that run.
   if (view === 'welcome') return <Welcome onStart={() => setView('onboarding')} />
   if (view === 'onboarding') {
     return <Settings settings={settings} onChange={updateSettings} onboarding onDone={finishSetup} />
   }
 
-  const route = state?.ui.indoor_route ?? null
-  const hasOutdoor = Boolean(state?.ui.outdoor_route)
+  const indoor = state?.ui.indoor_route ?? null
+  const outdoor = state?.ui.outdoor_route ?? null
+  const escalation = state?.ui.escalation ?? null
   const phase = state?.phase ?? 'idle'
+  const inBuilding = (phase === 'indoor' || phase === 'arrived') && indoor
+  const onCompass = compass.status === 'on' || compass.status === 'waiting' ? compass.disable : compass.enable
 
   // One-tap messages that match where the student is in the journey (the demo script, PLAN §7).
-  useEffect(() => { if (panel === 'map') setMapOpened(true) }, [panel])
-
   const suggestions =
     phase === 'indoor' || phase === 'arrived' ? ["I'm lost", 'I hurt my ankle']
     : phase === 'escalated' ? []
-    : hasOutdoor ? ["I'm at the East entrance", "I've arrived", "I'm lost"]
+    : outdoor ? ["I'm at the East entrance", "I've arrived", "I'm lost"]
     : state?.ui.next_class ? ["I'll take the bus", "I'll walk", 'How do I get to class?']
     : ['What is my next class?']
 
   // Demo presets without coordinates send no position, so the bus route cannot start anywhere.
   const presetMissing = settings.demo_mode && settings.location_preset !== 'gps' && PRESET_COORDS[settings.location_preset] === null
-  const escalation = state?.ui.escalation ?? null
 
   return (
     <div className="shell">
       <Toast toast={toast} onDismiss={() => setToast(null)} />
+      {/* Shown above every screen so a tab switch can never hide a request for help. */}
+      {escalation && (
+        <div className="escalation" role="alert" aria-label="Contact reception">
+          <p>{escalation.message}</p>
+          {escalation.needs_confirmation ? (
+            <div className="row">
+              <button onClick={() => confirm(true)}>Yes</button>
+              <button onClick={() => confirm(false)}>No</button>
+            </div>
+          ) : (
+            <ul>{escalation.contacts.map((c) => <li key={c.name}>{c.name}{c.note ? `: ${c.note}` : ''}</li>)}</ul>
+          )}
+        </div>
+      )}
+
       <div className="shell-body">
         {tab === 'chat' && (
           <div className="app">
-            <StatusBar demo={settings.demo_mode} nextClass={state?.ui.next_class ?? null} outdoor={state?.ui.outdoor_route ?? null} phase={state?.phase ?? 'idle'} />
+            <StatusBar demo={settings.demo_mode} nextClass={state?.ui.next_class ?? null} outdoor={outdoor} phase={phase} />
             {presetMissing && <p className="notice">Demo location has no coordinates yet, so no start point is sent. Pick Home or Real GPS in Settings.</p>}
-            {(state?.phase === 'indoor' || state?.phase === 'arrived') && route && (
-              <StepCard route={route} index={step} onChange={setStep} heading={compass.heading} compass={compass.status} onCompass={compass.status === 'on' || compass.status === 'waiting' ? compass.disable : compass.enable} />
-            )}
-            <div className="panel-tabs" role="tablist">
-              {(['map', 'floorplan', 'hide'] as const).map((p) => (
-                <button key={p} role="tab" aria-selected={panel === p} onClick={() => setPanel(p)}>
-                  {p === 'map' ? 'Map' : p === 'floorplan' ? 'Floor plan' : 'Hide'}
-                </button>
-              ))}
-            </div>
-            {panel === 'floorplan' && (
-              route ? <FloorPlanPanel route={route} step={step} onStep={setStep} /> : <p className="panel-empty">No indoor route yet.</p>
-            )}
-            {/* Once opened the map stays mounted (hidden), so switching tabs does not reload it. */}
-            {mapOpened && (
-              <div hidden={panel !== 'map'}>
-                <Suspense fallback={<div className="skeleton" role="status" aria-label="Loading map" />}>
-                  <MapPanel route={state?.ui.outdoor_route ?? null} visible={panel === 'map'} />
-                </Suspense>
-              </div>
-            )}
-            {escalation && (
-              <div className="escalation" role="alert" aria-label="Contact reception">
-                <p>{escalation.message}</p>
-                {escalation.needs_confirmation ? (
-                  <div className="row">
-                    <button onClick={() => confirm(true)}>Yes</button>
-                    <button onClick={() => confirm(false)}>No</button>
-                  </div>
-                ) : (
-                  <ul>{escalation.contacts.map((c) => <li key={c.name}>{c.name}{c.note ? `: ${c.note}` : ''}</li>)}</ul>
-                )}
-              </div>
-            )}
+            {inBuilding ? (
+              <button className="step-strip" onClick={() => setTab('plan')}>
+                <Icon name="arrow" size={20} />
+                <span className="strip-text"><strong>Step {step + 1} of {indoor.steps.length}</strong> {indoor.steps[step]?.instruction}</span>
+                <span className="strip-go">Floor plan</span>
+              </button>
+            ) : outdoor ? (
+              <button className="step-strip" onClick={() => setTab('map')}>
+                <Icon name="bus" size={20} />
+                <span className="strip-text"><strong>Journey</strong> {outdoor.summary}</span>
+                <span className="strip-go">Map</span>
+              </button>
+            ) : null}
             <ChatPanel messages={messages} pending={pending} nextClass={state?.ui.next_class ?? null} suggestions={suggestions} onSend={send} />
           </div>
+        )}
+
+        {/* Once opened the map stays mounted (hidden), so switching tabs does not reload it. */}
+        {mapOpened && (
+          <div className="tabpane" hidden={tab !== 'map'}>
+            <Suspense fallback={<div className="app"><div className="skeleton" role="status" aria-label="Loading map" /></div>}>
+              <MapPanel route={outdoor} visible={tab === 'map'} pending={pending} onAsk={send} />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'plan' && (
+          <FloorPlanPanel
+            route={indoor} step={step} onStep={setStep} heading={compass.heading} compass={compass.status}
+            onCompass={onCompass} pending={pending} onAsk={send}
+          />
         )}
         {tab === 'calendar' && (
           <CalendarPage nextClass={state?.ui.next_class ?? null} demoTime={settings.demo_mode ? settings.demo_time : null} />
@@ -183,7 +203,7 @@ export default function App() {
           <Settings settings={settings} onChange={updateSettings} onboarding={false} onDone={() => setTab('chat')} />
         )}
       </div>
-      <NavBar tab={tab} onChange={setTab} />
+      <NavBar tab={tab} onChange={setTab} badges={newRoute} />
     </div>
   )
 }

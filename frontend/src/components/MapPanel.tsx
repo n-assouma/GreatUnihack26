@@ -41,16 +41,16 @@ function LegIcon({ leg }: { leg: OutdoorLeg }) {
   return <span className="line-badge">{leg.line ?? 'Bus'}</span>
 }
 
-/** Draws the decoded Google polyline and fits the map to it. Re-fits when the panel becomes visible or is enlarged. */
-function RoutePath({ encoded, visible, expanded }: { encoded: string; visible: boolean; expanded: boolean }) {
+/** Draws the decoded Google polyline and fits the map to it. Re-fits when the screen becomes visible. */
+function RoutePath({ encoded, visible }: { encoded: string; visible: boolean }) {
   const map = useMap()
   const geometry = useMapsLibrary('geometry')
   const path = useMemo(() => (geometry && encoded ? geometry.encoding.decodePath(encoded) : []), [geometry, encoded])
 
-  // A map that was hidden (display: none) or resized needs a resize event before it will draw tiles correctly.
+  // A map that was hidden (display: none) needs a resize event before it will draw tiles correctly.
   useEffect(() => {
     if (map && visible) google.maps.event.trigger(map, 'resize')
-  }, [map, visible, expanded])
+  }, [map, visible])
 
   useEffect(() => {
     if (!map || path.length === 0 || !visible) return
@@ -60,7 +60,7 @@ function RoutePath({ encoded, visible, expanded }: { encoded: string; visible: b
     bounds.extend(BUILDING)
     map.fitBounds(bounds, 32)
     return () => line.setMap(null)
-  }, [map, path, visible, expanded])
+  }, [map, path, visible])
 
   return null
 }
@@ -123,52 +123,56 @@ function Timeline({ timed }: { timed: TimedLeg[] }) {
   )
 }
 
-interface Props { route: OutdoorRoute | null; visible: boolean }
+interface Props {
+  route: OutdoorRoute | null
+  visible: boolean
+  pending: boolean
+  onAsk: (text: string) => void
+}
 
-export function MapPanel({ route, visible }: Props) {
+/** The Map screen: journey summary, the map filling the screen, and the step-by-step timeline underneath. */
+export function MapPanel({ route, visible, pending, onAsk }: Props) {
   // Google calls window.gm_authFailure when the key is rejected (wrong referrer, API not enabled, billing).
   const [authFailed, setAuthFailed] = useState(false)
-  const [expanded, setExpanded] = useState(false)
   useEffect(() => {
     (window as unknown as { gm_authFailure?: () => void }).gm_authFailure = () => setAuthFailed(true)
   }, [])
-
-  useEffect(() => {
-    if (!expanded) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [expanded])
 
   const timed = useMemo(() => (route ? timeLegs(route) : []), [route])
   const showMap = Boolean(API_KEY) && !authFailed
 
   return (
-    <section className="mappanel" aria-label="Journey">
+    <section className="app mappage" aria-label="Journey map">
       {route ? (
         <>
           <Summary route={route} />
           <RouteStrip timed={timed} />
         </>
       ) : (
-        <p className="panel-empty">No journey yet. Tap “I’ll take the bus” or ask how to get to your next class.</p>
+        <div className="empty-state card">
+          <Icon name="map" size={32} />
+          <strong>No journey yet</strong>
+          <p className="muted">Choose how you will travel and I will plan it from where you are.</p>
+          <div className="quick">
+            {["I'll take the bus", "I'll walk", 'How do I get to class?'].map((s) => (
+              <button key={s} className="quick-btn" disabled={pending} onClick={() => onAsk(s)}>{s}</button>
+            ))}
+          </div>
+          {pending && <p className="muted" role="status">Planning your journey…</p>}
+        </div>
       )}
 
       {showMap ? (
-        <div className={`map-box${expanded ? ' expanded' : ''}`}>
+        <div className="map-box">
           <APIProvider apiKey={API_KEY!} libraries={['geometry']}>
             <Map
-              defaultCenter={BUILDING} defaultZoom={15} mapId="DEMO_MAP_ID" gestureHandling={expanded ? 'greedy' : 'cooperative'}
+              defaultCenter={BUILDING} defaultZoom={15} mapId="DEMO_MAP_ID" gestureHandling="greedy"
               disableDefaultUI zoomControl clickableIcons={false}
             >
               <AdvancedMarker position={BUILDING} title="Nancy Rothwell Building" />
-              {route?.polyline && <RoutePath encoded={route.polyline} visible={visible} expanded={expanded} />}
+              {route?.polyline && <RoutePath encoded={route.polyline} visible={visible} />}
             </Map>
           </APIProvider>
-          <button className="map-expand" onClick={() => setExpanded((e) => !e)}>{expanded ? 'Close map' : 'Enlarge'}</button>
-          {expanded && route && (
-            <div className="map-sheet"><Summary route={route} /></div>
-          )}
         </div>
       ) : (
         <p className="panel-empty">
@@ -176,7 +180,12 @@ export function MapPanel({ route, visible }: Props) {
         </p>
       )}
 
-      {route && <Timeline timed={timed} />}
+      {route && (
+        <details className="steps-sheet" open={!showMap || undefined}>
+          <summary>Journey steps ({timed.length})</summary>
+          <Timeline timed={timed} />
+        </details>
+      )}
     </section>
   )
 }
