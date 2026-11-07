@@ -150,6 +150,12 @@ export function FloorPlanPanel({ route, step, onStep }: Props) {
   const [building, setBuilding] = useState<BuildingSummary | null>(null)
   const [floor, setFloor] = useState<number | null>(null)
   const [open, setOpen] = useState(false)
+  const opener = useRef<HTMLElement | null>(null)
+  const modal = useRef<HTMLDivElement>(null)
+
+  // Remember the button that was pressed: scripted and Safari clicks do not move document.activeElement.
+  function openModal(e: React.MouseEvent<HTMLElement>) { opener.current = e.currentTarget; setOpen(true) }
+  function closeModal() { setOpen(false); opener.current?.focus() }
 
   useEffect(() => { void api.getBuilding().then(setBuilding) }, [])
 
@@ -165,7 +171,7 @@ export function FloorPlanPanel({ route, step, onStep }: Props) {
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
@@ -202,24 +208,34 @@ export function FloorPlanPanel({ route, step, onStep }: Props) {
 
   const current = route.steps[step]
 
+  // Keep Tab inside the full-screen view while it is open.
+  function trapTab(e: React.KeyboardEvent) {
+    if (e.key !== 'Tab' || !modal.current) return
+    const items = [...modal.current.querySelectorAll<HTMLElement>('button:not(:disabled)')]
+    if (items.length === 0) return
+    const first = items[0], last = items[items.length - 1]
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+  }
+
   return (
     <>
       <section className="floorplan">
         <div className="plan-inline">
           {view(false)}
-          <button className="plan-open" onClick={() => setOpen(true)} aria-label="Open larger floor plan" />
+          <button className="plan-open" onClick={openModal} aria-label="Open larger floor plan" />
           <div className="plan-overlay">
             {tabs}
-            <button onClick={() => setOpen(true)}>Enlarge</button>
+            <button onClick={openModal}>Enlarge</button>
           </div>
         </div>
       </section>
 
       {open && (
-        <div className="plan-modal" role="dialog" aria-modal="true" aria-label="Floor plan">
+        <div className="plan-modal" role="dialog" aria-modal="true" aria-label="Floor plan" ref={modal} onKeyDown={trapTab}>
           <header className="floor-head">
             {tabs}
-            <button onClick={() => setOpen(false)} autoFocus>Close</button>
+            <button onClick={closeModal} autoFocus>Close</button>
           </header>
           <div className="plan-modal-body">{view(true)}</div>
           {current && (

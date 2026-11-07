@@ -183,3 +183,24 @@ input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px v
 .app { gap: 6px; }
 .status-bar { margin-top: 6px; }
 .chat { padding-bottom: 8px; }
+
+/* Accessibility */
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.panel-tabs button, .step-card button, .segmented button, .plan-overlay button, .plan-overlay .panel-tabs button, .plan-controls button, .jump { min-height: 44px; }
+.step-card .row { flex-wrap: wrap; }
+.plan-inline { height: clamp(120px, 20dvh, 170px); }
+.chat { min-height: 180px; }
+
+/* Toast for assistant messages the user did not ask for */
+.toast-region { position: fixed; top: calc(8px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 60; display: flex; justify-content: center; padding: 0 12px; pointer-events: none; }
+.toast { pointer-events: auto; width: 100%; max-width: 560px; display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--surface); color: var(--fg); border: 2px solid var(--brand); border-radius: var(--radius); padding: 10px 12px 10px 16px; box-shadow: 0 6px 24px rgb(0 0 0 / .25); }
+.toast p { margin: 0; }
+
+/* Display preferences from Settings */
+:root[data-text="large"] { font-size: 19px; }
+:root[data-contrast="high"] { --fg: #000; --muted: #26332b; --line: #3a463e; --brand: #0a4a30; --brand-hover: #06361f; --bg: #fff; --surface: #fff; --brand-soft: #d3e8dc; }
+:root[data-contrast="high"] button, :root[data-contrast="high"] input, :root[data-contrast="high"] .card, :root[data-contrast="high"] .msg { border-width: 2px; }
+@media (prefers-color-scheme: dark) {
+  :root[data-contrast="high"] { --fg: #fff; --muted: #dfe8e2; --line: #b9c6bd; --brand: #8fe0b4; --brand-hover: #b3efcb; --bg: #000; --surface: #0b0b0b; --brand-soft: #123422; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }

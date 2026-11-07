@@ -8,6 +8,8 @@ import { NavBar, type Tab } from './components/NavBar'
 import { Settings } from './components/Settings'
 import { StatusBar } from './components/StatusBar'
 import { StepCard } from './components/StepCard'
+import { Toast, type ToastMessage } from './components/Toast'
+import { useCompass } from './hooks/useCompass'
 import { Welcome } from './components/Welcome'
 import { toContext, useSettings } from './hooks/useSettings'
 import type { ChatResponse } from './types'
@@ -40,10 +42,19 @@ export default function App() {
   const [state, setState] = useState<ChatResponse | null>(null)
   const [step, setStep] = useState(0)
   const [pending, setPending] = useState(false)
+  const [toast, setToast] = useState<ToastMessage | null>(null)
+  const compass = useCompass()
   const [panel, setPanel] = useState<'map' | 'floorplan' | 'hide'>('hide')
   const lastSuggested = useRef<string | null>(null)
 
-  const context = toContext(settings, step)
+  const context = toContext(settings, step, compass.heading)
+
+  // Display preferences are applied on <html> so the CSS tokens change everywhere.
+  useEffect(() => {
+    const root = document.documentElement
+    if (settings.high_contrast) root.dataset.contrast = 'high'; else delete root.dataset.contrast
+    if (settings.large_text) root.dataset.text = 'large'; else delete root.dataset.text
+  }, [settings.high_contrast, settings.large_text])
 
   function finishSetup() {
     try { localStorage.setItem('onboarded', '1') } catch { /* ignore */ }
@@ -51,12 +62,14 @@ export default function App() {
   }
 
   // Merge non-null fields from a response into UI state; open the panel only when the suggestion changes.
-  function apply(res: ChatResponse) {
+  // fromTick: the assistant spoke on its own (reminder, hurry warning, mode switch), so also raise a toast.
+  function apply(res: ChatResponse, fromTick = false) {
     setState((prev) => ({ ...res, ui: { ...prev?.ui, ...Object.fromEntries(Object.entries(res.ui).filter(([, v]) => v != null)) } }))
     if (res.ui.indoor_route) setStep(0)
     const suggestion = res.ui.open_panel ?? null
     if (suggestion && suggestion !== lastSuggested.current) setPanel(suggestion)
     lastSuggested.current = suggestion
+    if (fromTick && res.reply) setToast({ id: Date.now(), text: res.reply, agent: res.agent })
     if (res.reply) setMessages((m) => [...m, { role: 'assistant' as const, text: res.reply!, agent: res.agent, guardrails: res.guardrails }].slice(-MAX_MESSAGES))
   }
 
@@ -77,7 +90,7 @@ export default function App() {
   // Tick on load and whenever the demo time / location / accessibility settings change (PLAN F13).
   const tickKey = JSON.stringify([settings.demo_mode, settings.demo_time, settings.location_preset, settings.no_stairs])
   useEffect(() => {
-    if (view === 'main') void api.tick(sid, toContext(settings, 0)).then(apply)
+    if (view === 'main') void api.tick(sid, toContext(settings, 0, compass.heading)).then((r) => apply(r, true))
   }, [tickKey, view]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll /api/tick every 15 s (PLAN F13) using the latest settings and step, without re-creating the timer.
@@ -85,7 +98,7 @@ export default function App() {
   latest.current = context
   useEffect(() => {
     if (view !== 'main') return
-    const id = setInterval(() => { void api.tick(sid, latest.current).then(apply) }, 15_000)
+    const id = setInterval(() => { void api.tick(sid, latest.current).then((r) => apply(r, true)) }, 15_000)
     return () => clearInterval(id)
   }, [view, sid]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -99,12 +112,13 @@ export default function App() {
 
   return (
     <div className="shell">
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
       <div className="shell-body">
         {tab === 'chat' && (
           <div className="app">
             <StatusBar demo={settings.demo_mode} nextClass={state?.ui.next_class ?? null} outdoor={state?.ui.outdoor_route ?? null} phase={state?.phase ?? 'idle'} />
             {(state?.phase === 'indoor' || state?.phase === 'arrived') && route && (
-              <StepCard route={route} index={step} onChange={setStep} />
+              <StepCard route={route} index={step} onChange={setStep} heading={compass.heading} compass={compass.status} onCompass={compass.status === 'on' || compass.status === 'waiting' ? compass.disable : compass.enable} />
             )}
             <div className="panel-tabs" role="tablist">
               {(['map', 'floorplan', 'hide'] as const).map((p) => (
@@ -118,7 +132,7 @@ export default function App() {
             )}
             {panel === 'map' && <p className="panel-empty">Map arrives at M2.</p>}
             {escalation && (
-              <div className="escalation" role="alertdialog" aria-label="Contact reception">
+              <div className="escalation" role="alert" aria-label="Contact reception">
                 <p>{escalation.message}</p>
                 {escalation.needs_confirmation ? (
                   <div className="row">

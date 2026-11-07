@@ -14,6 +14,8 @@ const PATHS = {
   run: <><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2M9 2h6" /></>,
   chat: <path d="M21 12a8 8 0 01-11.5 7.2L4 21l1.8-5A8 8 0 1121 12z" />,
   settings: <><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></>,
+  contrast: <><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 010 18z" /></>,
+  text: <path d="M4 7V5h16v2M12 5v14M9 19h6" />,
   arrow: <path d="M12 19V5M6 11l6-6 6 6" />,
 } satisfies Record<string, ReactNode>
 

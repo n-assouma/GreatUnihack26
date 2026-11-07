@@ -81,6 +81,18 @@ export function Settings({ settings, onChange, onDone, onboarding }: Props) {
         </div>
       </div>
 
+      <h2>Display</h2>
+      <Suggestion
+        icon="contrast" title="High contrast"
+        text="Stronger colours and borders so everything is easier to see."
+        value={settings.high_contrast} onChange={(v) => onChange({ high_contrast: v })}
+      />
+      <Suggestion
+        icon="text" title="Larger text"
+        text="Make all text bigger across the app."
+        value={settings.large_text} onChange={(v) => onChange({ large_text: v })}
+      />
+
       <h2>For the demo</h2>
       <div className="card">
         <Suggestion

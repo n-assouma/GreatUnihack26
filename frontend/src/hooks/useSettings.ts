@@ -8,6 +8,8 @@ export interface Settings {
   visual_impairment: boolean
   transport_pref: 'walk' | 'run' | 'bus' | null
   voice: boolean
+  high_contrast: boolean
+  large_text: boolean
   demo_mode: boolean
   demo_time: string | null        // datetime-local value, e.g. "2026-11-07T08:20"
   location_preset: LocationPreset
@@ -18,6 +20,8 @@ export const DEFAULT_SETTINGS: Settings = {
   visual_impairment: false,
   transport_pref: null,
   voice: false,
+  high_contrast: false,
+  large_text: false,
   demo_mode: false,
   demo_time: null,
   location_preset: 'gps',
@@ -54,13 +58,14 @@ export const PRESET_COORDS: Record<LocationPreset, { lat: number; lng: number } 
   east: null,
 }
 
-export function toContext(s: Settings, current_step: number): ClientContext {
+export function toContext(s: Settings, current_step: number, heading: number | null = null): ClientContext {
   const coords = s.demo_mode ? PRESET_COORDS[s.location_preset] : null
   return {
     ...(coords ?? {}),
     demo_time: s.demo_mode && s.demo_time ? new Date(s.demo_time).toISOString() : null,
     accessibility: { no_stairs: s.no_stairs, visual_impairment: s.visual_impairment },
     transport_pref: s.transport_pref,
+    heading,
     current_step,
   }
 }
