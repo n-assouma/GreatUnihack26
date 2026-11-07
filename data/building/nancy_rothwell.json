@@ -1,0 +1,976 @@
+{
+ "building_id": "nancy_rothwell",
+ "name": "Nancy Rothwell Building",
+ "north_offset_deg": 0,
+ "floors": [
+  {
+   "floor": 0,
+   "label": "Ground",
+   "image": "floor_0.png",
+   "width": 1560,
+   "height": 1300,
+   "pixels_per_metre": 8.5
+  },
+  {
+   "floor": 1,
+   "label": "First",
+   "image": "floor_1.png",
+   "width": 1560,
+   "height": 1300,
+   "pixels_per_metre": 8.5
+  },
+  {
+   "floor": 2,
+   "label": "Second",
+   "image": "floor_2.png",
+   "width": 1560,
+   "height": 1300,
+   "pixels_per_metre": 8.5
+  },
+  {
+   "floor": 3,
+   "label": "Third",
+   "image": "floor_3.png",
+   "width": 1560,
+   "height": 1300,
+   "pixels_per_metre": 8.5
+  }
+ ],
+ "nodes": [
+  {
+   "id": "entrance_north",
+   "floor": 0,
+   "x": 248,
+   "y": 632,
+   "type": "entrance",
+   "label": "North entrance (Grosvenor Street)",
+   "aliases": [
+    "north door",
+    "north entrance",
+    "grosvenor street entrance",
+    "back door"
+   ],
+   "facing_deg": 90
+  },
+  {
+   "id": "entrance_east",
+   "floor": 0,
+   "x": 1183,
+   "y": 603,
+   "type": "entrance",
+   "label": "East entrance (Rumford Street)",
+   "aliases": [
+    "east door",
+    "east entrance",
+    "rumford street entrance",
+    "main door",
+    "front door",
+    "main entrance"
+   ],
+   "facing_deg": 180
+  },
+  {
+   "id": "entrance_south",
+   "floor": 0,
+   "x": 1225,
+   "y": 850,
+   "type": "entrance",
+   "label": "South entrance (Booth Street East)",
+   "aliases": [
+    "south door",
+    "south entrance",
+    "booth street entrance",
+    "cafe entrance"
+   ],
+   "facing_deg": 0
+  },
+  {
+   "id": "f0_top_core1",
+   "floor": 0,
+   "x": 373,
+   "y": 628,
+   "type": "junction",
+   "label": "Ground floor corridor by Core 1",
+   "aliases": []
+  },
+  {
+   "id": "f0_core1_lift",
+   "floor": 0,
+   "x": 373,
+   "y": 692,
+   "type": "lift",
+   "label": "Core 1 lifts (ground floor)",
+   "aliases": [
+    "core 1 lift",
+    "core 1 lifts",
+    "lifts core 1"
+   ]
+  },
+  {
+   "id": "f0_top_core2",
+   "floor": 0,
+   "x": 668,
+   "y": 628,
+   "type": "junction",
+   "label": "Ground floor corridor by Core 2",
+   "aliases": []
+  },
+  {
+   "id": "f0_core2_lift",
+   "floor": 0,
+   "x": 668,
+   "y": 692,
+   "type": "lift",
+   "label": "Core 2 lifts (ground floor)",
+   "aliases": [
+    "core 2 lift",
+    "core 2 lifts",
+    "lifts core 2"
+   ]
+  },
+  {
+   "id": "f0_top_core3",
+   "floor": 0,
+   "x": 950,
+   "y": 628,
+   "type": "junction",
+   "label": "Ground floor corridor by Core 3",
+   "aliases": []
+  },
+  {
+   "id": "f0_core3_lift",
+   "floor": 0,
+   "x": 950,
+   "y": 692,
+   "type": "lift",
+   "label": "Core 3 lifts (ground floor)",
+   "aliases": [
+    "core 3 lift",
+    "core 3 lifts",
+    "lifts core 3"
+   ]
+  },
+  {
+   "id": "f0_top_makerspace",
+   "floor": 0,
+   "x": 1015,
+   "y": 628,
+   "type": "junction",
+   "label": "Ground floor corridor by the Makerspace",
+   "aliases": []
+  },
+  {
+   "id": "f0_makerspace",
+   "floor": 0,
+   "x": 1015,
+   "y": 720,
+   "type": "landmark",
+   "label": "Makerspace",
+   "aliases": [
+    "maker space",
+    "makerspace"
+   ]
+  },
+  {
+   "id": "f0_top_east",
+   "floor": 0,
+   "x": 1183,
+   "y": 628,
+   "type": "junction",
+   "label": "Ground floor corridor inside the East entrance",
+   "aliases": []
+  },
+  {
+   "id": "f0_top_south",
+   "floor": 0,
+   "x": 1225,
+   "y": 628,
+   "type": "junction",
+   "label": "Ground floor corridor above the South entrance",
+   "aliases": []
+  },
+  {
+   "id": "f0_south_hall",
+   "floor": 0,
+   "x": 1225,
+   "y": 780,
+   "type": "junction",
+   "label": "South entrance hall",
+   "aliases": []
+  },
+  {
+   "id": "f0_cafe_collab",
+   "floor": 0,
+   "x": 1300,
+   "y": 795,
+   "type": "landmark",
+   "label": "Collaborate Cafe",
+   "aliases": [
+    "cafe",
+    "coffee",
+    "collaborate cafe"
+   ]
+  },
+  {
+   "id": "f0_core4_lift",
+   "floor": 0,
+   "x": 1278,
+   "y": 628,
+   "type": "lift",
+   "label": "Core 4 lifts (ground floor)",
+   "aliases": [
+    "core 4 lift",
+    "core 4 lifts",
+    "east lifts",
+    "lifts by the east entrance"
+   ]
+  },
+  {
+   "id": "f1_corr_core1",
+   "floor": 1,
+   "x": 357,
+   "y": 672,
+   "type": "junction",
+   "label": "First floor corridor by Core 1",
+   "aliases": []
+  },
+  {
+   "id": "f1_core1_lift",
+   "floor": 1,
+   "x": 357,
+   "y": 718,
+   "type": "lift",
+   "label": "Core 1 lifts (first floor)",
+   "aliases": [
+    "core 1 lift",
+    "core 1 lifts"
+   ]
+  },
+  {
+   "id": "f1_corr_core2",
+   "floor": 1,
+   "x": 662,
+   "y": 672,
+   "type": "junction",
+   "label": "First floor corridor by Core 2",
+   "aliases": []
+  },
+  {
+   "id": "f1_core2_lift",
+   "floor": 1,
+   "x": 662,
+   "y": 716,
+   "type": "lift",
+   "label": "Core 2 lifts (first floor)",
+   "aliases": [
+    "core 2 lift",
+    "core 2 lifts"
+   ]
+  },
+  {
+   "id": "f1_corr_core3",
+   "floor": 1,
+   "x": 962,
+   "y": 672,
+   "type": "junction",
+   "label": "First floor corridor by Core 3",
+   "aliases": []
+  },
+  {
+   "id": "f1_core3_lift",
+   "floor": 1,
+   "x": 962,
+   "y": 716,
+   "type": "lift",
+   "label": "Core 3 lifts (first floor)",
+   "aliases": [
+    "core 3 lift",
+    "core 3 lifts"
+   ]
+  },
+  {
+   "id": "f1_corr_core4",
+   "floor": 1,
+   "x": 1290,
+   "y": 676,
+   "type": "junction",
+   "label": "First floor corridor by Core 4",
+   "aliases": []
+  },
+  {
+   "id": "f1_core4_lift",
+   "floor": 1,
+   "x": 1310,
+   "y": 642,
+   "type": "lift",
+   "label": "Core 4 lifts (first floor)",
+   "aliases": [
+    "core 4 lift",
+    "core 4 lifts"
+   ]
+  },
+  {
+   "id": "f1_student_hub",
+   "floor": 1,
+   "x": 1021,
+   "y": 715,
+   "type": "landmark",
+   "label": "Student Support Hub",
+   "aliases": [
+    "student support hub",
+    "student hub",
+    "support hub"
+   ]
+  },
+  {
+   "id": "f1_theatre_a_door",
+   "floor": 1,
+   "x": 1262,
+   "y": 702,
+   "type": "junction",
+   "label": "Door of Lecture Theatre A",
+   "aliases": []
+  },
+  {
+   "id": "THEATRE_A",
+   "floor": 1,
+   "x": 1240,
+   "y": 790,
+   "type": "room",
+   "label": "Lecture Theatre A",
+   "aliases": [
+    "lecture theatre a",
+    "theatre a",
+    "tiered lecture theatre a",
+    "2a.040",
+    "lt a"
+   ]
+  },
+  {
+   "id": "f2_corr_core1",
+   "floor": 2,
+   "x": 265,
+   "y": 705,
+   "type": "junction",
+   "label": "Second floor corridor by Core 1",
+   "aliases": []
+  },
+  {
+   "id": "f2_core1_lift",
+   "floor": 2,
+   "x": 265,
+   "y": 745,
+   "type": "lift",
+   "label": "Core 1 lifts (second floor)",
+   "aliases": [
+    "core 1 lift",
+    "core 1 lifts"
+   ]
+  },
+  {
+   "id": "f2_corr_core2",
+   "floor": 2,
+   "x": 593,
+   "y": 705,
+   "type": "junction",
+   "label": "Second floor corridor by Core 2",
+   "aliases": []
+  },
+  {
+   "id": "f2_core2_lift",
+   "floor": 2,
+   "x": 593,
+   "y": 745,
+   "type": "lift",
+   "label": "Core 2 lifts (second floor)",
+   "aliases": [
+    "core 2 lift",
+    "core 2 lifts"
+   ]
+  },
+  {
+   "id": "f2_corr_core3",
+   "floor": 2,
+   "x": 912,
+   "y": 705,
+   "type": "junction",
+   "label": "Second floor corridor by Core 3",
+   "aliases": []
+  },
+  {
+   "id": "f2_core3_lift",
+   "floor": 2,
+   "x": 912,
+   "y": 745,
+   "type": "lift",
+   "label": "Core 3 lifts (second floor)",
+   "aliases": [
+    "core 3 lift",
+    "core 3 lifts"
+   ]
+  },
+  {
+   "id": "f2_corr_core4",
+   "floor": 2,
+   "x": 1282,
+   "y": 712,
+   "type": "junction",
+   "label": "Second floor corridor by Core 4",
+   "aliases": []
+  },
+  {
+   "id": "f2_core4_lift",
+   "floor": 2,
+   "x": 1282,
+   "y": 675,
+   "type": "lift",
+   "label": "Core 4 lifts (second floor)",
+   "aliases": [
+    "core 4 lift",
+    "core 4 lifts"
+   ]
+  },
+  {
+   "id": "f3_core1_lift",
+   "floor": 3,
+   "x": 340,
+   "y": 748,
+   "type": "lift",
+   "label": "Core 1 lifts (third floor)",
+   "aliases": [
+    "core 1 lift",
+    "core 1 lifts"
+   ]
+  },
+  {
+   "id": "f3_front_core1",
+   "floor": 3,
+   "x": 368,
+   "y": 840,
+   "type": "junction",
+   "label": "Third floor by Core 1",
+   "aliases": []
+  },
+  {
+   "id": "f3_aisle_core1",
+   "floor": 3,
+   "x": 368,
+   "y": 885,
+   "type": "junction",
+   "label": "Third floor aisle by Core 1",
+   "aliases": []
+  },
+  {
+   "id": "f3_core2_lift",
+   "floor": 3,
+   "x": 640,
+   "y": 748,
+   "type": "lift",
+   "label": "Core 2 lifts (third floor)",
+   "aliases": [
+    "core 2 lift",
+    "core 2 lifts"
+   ]
+  },
+  {
+   "id": "f3_front_core2",
+   "floor": 3,
+   "x": 668,
+   "y": 840,
+   "type": "junction",
+   "label": "Third floor by Core 2",
+   "aliases": []
+  },
+  {
+   "id": "f3_aisle_core2",
+   "floor": 3,
+   "x": 668,
+   "y": 885,
+   "type": "junction",
+   "label": "Third floor aisle by Core 2",
+   "aliases": []
+  },
+  {
+   "id": "f3_core3_lift",
+   "floor": 3,
+   "x": 940,
+   "y": 748,
+   "type": "lift",
+   "label": "Core 3 lifts (third floor)",
+   "aliases": [
+    "core 3 lift",
+    "core 3 lifts"
+   ]
+  },
+  {
+   "id": "f3_front_core3",
+   "floor": 3,
+   "x": 968,
+   "y": 840,
+   "type": "junction",
+   "label": "Third floor by Core 3",
+   "aliases": []
+  },
+  {
+   "id": "f3_aisle_core3",
+   "floor": 3,
+   "x": 968,
+   "y": 885,
+   "type": "junction",
+   "label": "Third floor aisle by Core 3",
+   "aliases": []
+  },
+  {
+   "id": "f3_core4_lift",
+   "floor": 3,
+   "x": 1295,
+   "y": 672,
+   "type": "lift",
+   "label": "Core 4 lifts (third floor)",
+   "aliases": [
+    "core 4 lift",
+    "core 4 lifts"
+   ]
+  },
+  {
+   "id": "f3_front_core4",
+   "floor": 3,
+   "x": 1295,
+   "y": 730,
+   "type": "junction",
+   "label": "Third floor by Core 4",
+   "aliases": []
+  },
+  {
+   "id": "f3_aisle_east",
+   "floor": 3,
+   "x": 1240,
+   "y": 885,
+   "type": "junction",
+   "label": "Third floor aisle, east end",
+   "aliases": []
+  },
+  {
+   "id": "f3_door_3A041",
+   "floor": 3,
+   "x": 645,
+   "y": 903,
+   "type": "junction",
+   "label": "Door of room 3A.041",
+   "aliases": []
+  },
+  {
+   "id": "3A.041",
+   "floor": 3,
+   "x": 645,
+   "y": 928,
+   "type": "room",
+   "label": "Room 3A.041",
+   "aliases": [
+    "3a.041",
+    "3a 041"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "from": "entrance_north",
+   "to": "f0_top_core1",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_core1",
+   "to": "f0_top_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_core2",
+   "to": "f0_top_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_core3",
+   "to": "f0_top_makerspace",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_makerspace",
+   "to": "f0_top_east",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_east",
+   "to": "f0_top_south",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_south",
+   "to": "f0_core4_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_core1",
+   "to": "f0_core1_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_core2",
+   "to": "f0_core2_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_core3",
+   "to": "f0_core3_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "entrance_east",
+   "to": "f0_top_east",
+   "type": "door",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_makerspace",
+   "to": "f0_makerspace",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_top_south",
+   "to": "f0_south_hall",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "entrance_south",
+   "to": "f0_south_hall",
+   "type": "door",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_south_hall",
+   "to": "f0_cafe_collab",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_corr_core1",
+   "to": "f1_core1_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_corr_core2",
+   "to": "f1_core2_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_corr_core3",
+   "to": "f1_core3_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_corr_core4",
+   "to": "f1_core4_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_corr_core1",
+   "to": "f1_corr_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_corr_core2",
+   "to": "f1_corr_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_corr_core3",
+   "to": "f1_corr_core4",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_corr_core3",
+   "to": "f1_student_hub",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_corr_core4",
+   "to": "f1_theatre_a_door",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_theatre_a_door",
+   "to": "THEATRE_A",
+   "type": "door",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_corr_core1",
+   "to": "f2_core1_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_corr_core2",
+   "to": "f2_core2_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_corr_core3",
+   "to": "f2_core3_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_corr_core4",
+   "to": "f2_core4_lift",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_corr_core1",
+   "to": "f2_corr_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_corr_core2",
+   "to": "f2_corr_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_corr_core3",
+   "to": "f2_corr_core4",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_core1_lift",
+   "to": "f3_front_core1",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_front_core1",
+   "to": "f3_aisle_core1",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_core2_lift",
+   "to": "f3_front_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_front_core2",
+   "to": "f3_aisle_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_core3_lift",
+   "to": "f3_front_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_front_core3",
+   "to": "f3_aisle_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_core4_lift",
+   "to": "f3_front_core4",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_front_core4",
+   "to": "f3_aisle_east",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_aisle_core1",
+   "to": "f3_aisle_core2",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_aisle_core2",
+   "to": "f3_aisle_core3",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_aisle_core3",
+   "to": "f3_aisle_east",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_aisle_core2",
+   "to": "f3_door_3A041",
+   "type": "corridor",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f3_door_3A041",
+   "to": "3A.041",
+   "type": "door",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core1_lift",
+   "to": "f1_core1_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_core1_lift",
+   "to": "f2_core1_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_core1_lift",
+   "to": "f3_core1_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core2_lift",
+   "to": "f1_core2_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_core2_lift",
+   "to": "f2_core2_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_core2_lift",
+   "to": "f3_core2_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core3_lift",
+   "to": "f1_core3_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_core3_lift",
+   "to": "f2_core3_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_core3_lift",
+   "to": "f3_core3_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f0_core4_lift",
+   "to": "f1_core4_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f1_core4_lift",
+   "to": "f2_core4_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  },
+  {
+   "from": "f2_core4_lift",
+   "to": "f3_core4_lift",
+   "type": "lift",
+   "accessible": true,
+   "keycard": false
+  }
+ ]
+}
