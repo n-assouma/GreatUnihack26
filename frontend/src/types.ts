@@ -110,6 +110,11 @@ export interface LocateResult {
   candidates: { node_id: string; label: string; floor: number }[];
 }
 
+// Not in CONTRACTS yet (A2 added it, additive): GET /api/timetable?demo_time=...
+export interface Timetable {
+  classes: ClassInfo[]; next_class: ClassInfo | null; now: string;
+}
+
 export interface SessionInfo {
   phase: Phase; agent: AgentName; next_class: ClassInfo | null; profile: unknown;
 }

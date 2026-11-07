@@ -114,7 +114,7 @@ export default function App() {
               ))}
             </div>
             {panel === 'floorplan' && (
-              route ? <FloorPlanPanel route={route} step={step} /> : <p className="panel-empty">No indoor route yet.</p>
+              route ? <FloorPlanPanel route={route} step={step} onStep={setStep} /> : <p className="panel-empty">No indoor route yet.</p>
             )}
             {panel === 'map' && <p className="panel-empty">Map arrives at M2.</p>}
             {escalation && (

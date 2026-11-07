@@ -2,7 +2,7 @@
 // With VITE_USE_MOCKS=1, or when a request fails, fixtures from src/mocks are returned instead.
 import * as mocks from './mocks'
 import type {
-  BuildingSummary, ChatResponse, ClientContext, Health, IndoorRoute, LocateResult, SessionInfo,
+  BuildingSummary, ChatResponse, ClientContext, Health, IndoorRoute, LocateResult, SessionInfo, Timetable,
 } from './types'
 
 const FORCE_MOCKS = import.meta.env.VITE_USE_MOCKS === '1'
@@ -49,6 +49,12 @@ export const getSession = (session_id: string) =>
   request<SessionInfo>(`/api/session/${session_id}`, undefined, () => ({
     phase: 'idle', agent: 'coordinator', next_class: null, profile: {},
   }))
+
+export const getTimetable = (demo_time?: string | null) =>
+  request<Timetable>(
+    `/api/timetable${demo_time ? `?demo_time=${encodeURIComponent(demo_time)}` : ''}`, undefined,
+    () => ({ classes: [mocks.chatOutdoor.ui.next_class!], next_class: mocks.chatOutdoor.ui.next_class!, now: new Date().toISOString() }),
+  )
 
 export const getHealth = () =>
   request<Health>('/api/health', undefined, () => ({
