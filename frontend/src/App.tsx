@@ -27,6 +27,12 @@ const MapPanel = lazy(() => import('./components/MapPanel').then((m) => ({ defau
 const indoorKey = (r: IndoorRoute) => `${r.start_node}|${r.destination_id}|${r.accessible}|${r.steps.map((s) => s.instruction).join('/')}`
 const outdoorKey = (r: OutdoorRoute) => `${r.mode}|${r.polyline}`
 
+// What the student just said decides where to take them, even when the backend re-sends a route they already had:
+// stating a position ("I'm at the East entrance", "I've arrived") means the floor plan, from the first step;
+// asking for a journey ("I'll take the bus", "how do I get to class") means the map.
+const SAYS_POSITION = /\b(i'?m|i am|we'?re|we are)\b.*\b(at|in|by|near|inside|outside)\b|\bentrance\b|\barrived\b|\bi'?ve (got|made it|reached)\b/i
+const ASKS_JOURNEY = /\b(bus|walk|run|journey|route|get (to|there)|how (do|can|should) i get|leave)\b/i
+
 // Left-to-right order of the tabs, so a screen change can slide in from the side it is coming from.
 const TAB_ORDER: Tab[] = ['chat', 'map', 'plan', 'calendar', 'settings']
 
@@ -87,6 +93,7 @@ export default function App() {
   const routeForVoice = state?.ui.indoor_route ?? null
   const shellRef = useRef<HTMLDivElement>(null)
   const lastIndoor = useRef('')
+  const lastSent = useRef('')  // the student's latest message, read when its reply arrives
   const lastOutdoor = useRef('')
 
   // apply() runs from timers, so read the current tab through a ref instead of a stale closure.
@@ -186,7 +193,10 @@ export default function App() {
     const o = res.ui.outdoor_route && outdoorKey(res.ui.outdoor_route) !== lastOutdoor.current ? res.ui.outdoor_route : null
     if (res.ui.indoor_route) lastIndoor.current = indoorKey(res.ui.indoor_route)
     if (res.ui.outdoor_route) lastOutdoor.current = outdoorKey(res.ui.outdoor_route)
-    if (i) setStep(0)
+    const said = fromTick ? '' : lastSent.current
+    const statedPosition = SAYS_POSITION.test(said)
+    // A new route, or the student telling us where they are, starts the steps again from the beginning.
+    if (i || (statedPosition && res.ui.indoor_route)) setStep(0)
     // A route the user is not looking at gets a dot on its tab instead of yanking them to another screen.
     if (o && tabRef.current !== 'map') setNewRoute((n) => ({ ...n, map: true }))
     if (i && tabRef.current !== 'plan') setNewRoute((n) => ({ ...n, plan: true }))
@@ -209,8 +219,8 @@ export default function App() {
     phaseRef.current = res.phase
     const justArrived = inside && prevPhase !== null && prevPhase !== 'indoor' && prevPhase !== 'arrived'
     const autoTab: Tab | null = !autoRef.current || res.phase === 'escalated' ? null
-      : inside && (i || justArrived) ? 'plan'
-      : !inside && o ? 'map'
+      : inside && (i || justArrived || (statedPosition && res.ui.indoor_route)) ? 'plan'
+      : !inside && (o || (ASKS_JOURNEY.test(said) && res.ui.outdoor_route)) ? 'map'
       : null
     const from = tabRef.current
     const leavingChat = autoTab !== null && autoTab !== from && from === 'chat'
@@ -237,6 +247,7 @@ export default function App() {
 
   async function send(text: string) {
     speech.cancel() // a new message cuts off whatever is being read out
+    lastSent.current = text
     setMessages((m) => [...m, { role: 'user' as const, text }].slice(-MAX_MESSAGES))
     setPending(true)
     try {
