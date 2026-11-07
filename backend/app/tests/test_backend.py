@@ -81,14 +81,35 @@ def test_the_next_class_rolls_over_through_the_day():
     """Four real classes back to back: each demo time must pick the right one."""
     expected = [
         ("2026-11-09T09:20:00+00:00", "10:00", "THEATRE_A"),
-        ("2026-11-09T10:30:00+00:00", "11:00", "THEATRE_B"),  # during the 10:00 class
-        ("2026-11-09T12:00:00+00:00", "13:00", "THEATRE_A"),
+        ("2026-11-09T10:30:00+00:00", "11:00", "GA.019"),  # during the 10:00 class
+        ("2026-11-09T12:00:00+00:00", "13:00", "GA.035"),
         ("2026-11-09T13:30:00+00:00", "14:00", "THEATRE_B"),  # during the 13:00 class
     ]
     for index, (demo_time, clock, room) in enumerate(expected):
         found = next_class_at(demo_time, f"s-roll{index}")
         assert found["start"].startswith(f"2026-11-09T{clock}"), (demo_time, found["start"])
         assert found["room_id"] == room, (demo_time, found["room_id"])
+
+
+def test_every_timetable_room_exists_in_the_building():
+    """Keenan changed two rooms, so this guards the coupling: a class in a room the
+    graph does not have means the student gets no route at all — the tool guardrail
+    refuses and the agent can only ask which room they meant."""
+    from datetime import datetime, timezone
+
+    from app import indoor_api
+
+    monday = datetime(2026, 11, 9, 7, 0, tzinfo=timezone.utc)
+    classes = timetable.week(monday)
+    assert classes, "no classes found for the demo week"
+
+    for class_info in classes:
+        if class_info["building_id"] != "nancy_rothwell":
+            continue  # other buildings legitimately have no indoor guidance (D1)
+        assert indoor_api.room_exists(class_info["room_id"]), (
+            f"{class_info['title']} is in {class_info['room_id']}, which the building "
+            f"graph does not have"
+        )
 
 
 def test_a_student_running_late_still_gets_the_class_they_are_late_for():
