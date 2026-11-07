@@ -400,6 +400,27 @@ def test_tts_returns_503_without_a_key():
     assert response.status_code == 503
 
 
+def test_an_elevenlabs_key_id_is_rejected_as_misconfigured(monkeypatch):
+    """Regression: we were handed the dashboard's API key *ID* instead of the key.
+    It looks like a credential, so /api/health reported tts "real" until the first
+    call failed with 400. A key that cannot work must read as not configured."""
+    from app import tts
+
+    monkeypatch.setattr(tts, "_warned_about_key", False, raising=False)
+    monkeypatch.setenv("ELEVENLABS_VOICE_ID", "Cx2PEJFdr8frSuUVB6yZ")
+
+    # 64 hex chars: an API key ID, not an API key.
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "3b80291eb0abd7ef" * 4)
+    assert tts.configured() is False
+    assert tts.status() == "mock"
+    assert tts.speak("hello") is None  # no doomed network round-trip
+    assert client.post("/api/tts", json={"text": "hello"}).status_code == 503
+
+    # A correctly shaped key is accepted as configured.
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "sk_pretend_this_is_real")
+    assert tts.configured() is True
+
+
 def test_unknown_room_is_never_invented():
     """The tool guardrail refuses a room that is not in the building."""
     from app import guardrails
