@@ -204,3 +204,10 @@ input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px v
   :root[data-contrast="high"] { --fg: #fff; --muted: #dfe8e2; --line: #b9c6bd; --brand: #8fe0b4; --brand-hover: #b3efcb; --bg: #000; --surface: #0b0b0b; --brand-soft: #123422; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+
+/* Map panel */
+.mappanel { display: flex; flex-direction: column; gap: 8px; max-height: 38dvh; overflow-y: auto; }
+.map-box { flex: none; height: clamp(150px, 24dvh, 230px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.legs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.leg { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+.leg p { margin: 0; }

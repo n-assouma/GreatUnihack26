@@ -4,6 +4,7 @@ import * as api from './api'
 import { CalendarPage } from './components/CalendarPage'
 import { ChatPanel, type ChatMessage } from './components/ChatPanel'
 import { FloorPlanPanel } from './components/FloorPlanPanel'
+import { MapPanel } from './components/MapPanel'
 import { NavBar, type Tab } from './components/NavBar'
 import { Settings } from './components/Settings'
 import { StatusBar } from './components/StatusBar'
@@ -130,7 +131,7 @@ export default function App() {
             {panel === 'floorplan' && (
               route ? <FloorPlanPanel route={route} step={step} onStep={setStep} /> : <p className="panel-empty">No indoor route yet.</p>
             )}
-            {panel === 'map' && <p className="panel-empty">Map arrives at M2.</p>}
+            {panel === 'map' && <MapPanel route={state?.ui.outdoor_route ?? null} />}
             {escalation && (
               <div className="escalation" role="alert" aria-label="Contact reception">
                 <p>{escalation.message}</p>
