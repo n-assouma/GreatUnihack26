@@ -10,11 +10,12 @@ import uuid
 import httpx
 
 BASE = "http://localhost:8000"
-DEMO_TIME = "2026-11-09T09:40:00+00:00"  # Monday, 20 min before the real 10:00 class.
-# 09:40 is deliberate: the real bus takes 12 min, so this is the clock that produces
-# the "Hurry" chip PLAN §7 step 2 asks for. An earlier clock correctly reads on_time.
-HOME = {"lat": 53.4600, "lng": -2.2300}
-EAST = {"lat": 53.469093, "lng": -2.234591}
+DEMO_TIME = "2026-11-09T09:30:00+00:00"  # Monday, 30 min before the real 10:00 class.
+# 09:30 is deliberate: from Ashburne Hall the real journey is ~21 min (bus 41), so
+# this is the clock that produces the "Hurry" chip PLAN §7 step 2 asks for. 09:25
+# reads on_time and 09:35 reads late — re-derive this if the Home preset changes.
+HOME = {"lat": 53.445273, "lng": -2.215431}  # Ashburne Hall, Fallowfield (D3)
+EAST = {"lat": 53.469093, "lng": -2.234591}  # at the building, inside the geofence
 
 label = sys.argv[1] if len(sys.argv) > 1 else "run"
 session = f"demo-{label}-{uuid.uuid4().hex[:6]}"
