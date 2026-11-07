@@ -183,7 +183,8 @@ def _as_list(options: list[str]) -> str:
     return f"{', '.join(options[:-1])} or {options[-1]}"
 
 
-def _first_step_text(state: SessionState) -> str | None:
+def _current_step_text(state: SessionState) -> str | None:
+    """The one step the student is on — one instruction at a time (F7)."""
     steps = (state.indoor_route or {}).get("steps") or []
     index = state.current_step or 0
     if 0 <= index < len(steps):
@@ -196,6 +197,14 @@ def _template_reply(state: SessionState, message: str) -> str:
     if state.next_class is None:
         tools.get_next_class(state)
     next_class = state.next_class
+
+    if state.phase == "arrived":
+        room = (next_class or {}).get("room_label")
+        return (
+            f"You've made it to {room}. Hope the lecture goes well."
+            if room
+            else "You've arrived. Hope it goes well."
+        )
 
     if state.phase == "indoor":
         if state.current_node is None:
@@ -215,10 +224,17 @@ def _template_reply(state: SessionState, message: str) -> str:
         if state.indoor_route is None and next_class:
             tools.plan_indoor_route(state, state.current_node or "", next_class.get("room_id", ""))
 
-        step = _first_step_text(state)
+        step = _current_step_text(state)
         if step:
-            lift = "You'll be using the lift. " if state.no_stairs else ""
-            return f"{lift}{step}"
+            # Reassure a step-free user once, on the first step — not glued to every
+            # instruction, where it ends up on steps that involve no lift at all.
+            steps = (state.indoor_route or {}).get("steps") or []
+            first = (state.current_step or 0) == 0
+            uses_lift = any(item.get("via") == "lift" for item in steps)
+            prefix = "This route is step-free, using the lift. " if (
+                state.no_stairs and first and uses_lift
+            ) else ""
+            return f"{prefix}{step}"
         return "I can't work out a route inside the building right now."
 
     if state.phase == "outdoor":

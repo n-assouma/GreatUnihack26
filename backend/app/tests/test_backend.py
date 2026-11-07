@@ -155,6 +155,96 @@ def test_the_demo_script_runs_without_any_api_keys():
     assert step6["ui"]["escalation"]["needs_confirmation"] is True
 
 
+def test_stepping_through_the_route_gives_one_instruction_at_a_time():
+    """F7: each step is its own instruction, and the lift reassurance is said once."""
+    inside = {**ACCESSIBLE_CONTEXT, "lat": BUILDING_LAT, "lng": BUILDING_LNG}
+    client.post("/api/tick", json={"session_id": "s-steps", "context": inside})
+    first = post_chat("s-steps", "I am at the East entrance", inside)
+
+    steps = first["ui"]["indoor_route"]["steps"]
+    assert len(steps) >= 3
+    assert "step-free" in first["reply"]  # said on the first step
+
+    replies = []
+    for index in range(1, len(steps)):
+        body = client.post(
+            "/api/chat",
+            json={
+                "session_id": "s-steps",
+                "message": "what next?",
+                "context": {**inside, "current_step": index},
+            },
+        ).json()
+        replies.append(body["reply"])
+
+    # Each middle step is its own instruction, and none repeats the reassurance.
+    assert all("step-free" not in reply for reply in replies)
+    assert replies[0] != replies[1]
+
+
+def test_reaching_the_last_step_says_they_have_arrived():
+    """Regression: on arrival it used to ask how they'd like to travel to the room
+    they were already standing in — the final beat of the demo."""
+    inside = {**ACCESSIBLE_CONTEXT, "lat": BUILDING_LAT, "lng": BUILDING_LNG}
+    client.post("/api/tick", json={"session_id": "s-arrive", "context": inside})
+    first = post_chat("s-arrive", "I am at the East entrance", inside)
+    last = len(first["ui"]["indoor_route"]["steps"]) - 1
+
+    body = client.post(
+        "/api/chat",
+        json={
+            "session_id": "s-arrive",
+            "message": "what next?",
+            "context": {**inside, "current_step": last},
+        },
+    ).json()
+
+    assert body["phase"] == "arrived"
+    assert "made it" in body["reply"]
+    assert "Lecture Theatre A" in body["reply"]
+    assert "how would you like" not in body["reply"].lower()
+
+
+def test_tick_reminds_about_the_class_once_and_only_once():
+    """F13: the app speaks up on its own, but does not nag."""
+    context = {**PLAIN_CONTEXT, "demo_time": "2026-11-09T08:30:00+00:00"}  # 30 min before
+
+    first = client.post("/api/tick", json={"session_id": "s-tick", "context": context}).json()
+    assert first["reply"] is not None
+    assert "30 minutes" in first["reply"]
+    assert "Lecture Theatre A" in first["reply"]
+
+    second = client.post("/api/tick", json={"session_id": "s-tick", "context": context}).json()
+    assert second["reply"] is None, second["reply"]
+
+
+def test_tick_stays_quiet_when_the_class_is_far_off():
+    context = {**PLAIN_CONTEXT, "demo_time": "2026-11-09T05:00:00+00:00"}  # 4 hours before
+    body = client.post("/api/tick", json={"session_id": "s-quiet", "context": context}).json()
+    assert body["reply"] is None
+
+
+def test_an_entrance_sets_the_facing_direction_with_no_compass():
+    """F14: at an entrance we know which way they face, so turns are correct."""
+    inside = {**PLAIN_CONTEXT, "lat": BUILDING_LAT, "lng": BUILDING_LNG}
+    client.post("/api/tick", json={"session_id": "s-face", "context": inside})
+    post_chat("s-face", "I am at the East entrance", inside)
+
+    debug = client.get("/api/session/s-face").json()
+    assert debug["heading_source"] == "entrance"
+    assert debug["current_node"] == "entrance_east"
+
+
+def test_a_real_compass_reading_wins_over_the_entrance_default():
+    inside = {**PLAIN_CONTEXT, "lat": BUILDING_LAT, "lng": BUILDING_LNG, "heading": 90.0}
+    client.post("/api/tick", json={"session_id": "s-compass", "context": inside})
+    post_chat("s-compass", "I am at the East entrance", inside)
+
+    debug = client.get("/api/session/s-compass").json()
+    assert debug["heading_source"] == "compass"
+    assert debug["heading"] == 90.0
+
+
 def test_off_topic_input_is_blocked_with_a_visible_event():
     body = post_chat("s-offtopic", "what's the weather like tomorrow?")
     events = body["guardrails"]
