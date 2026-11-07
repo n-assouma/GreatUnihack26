@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import * as api from './api'
 import { CalendarPage } from './components/CalendarPage'
 import { ChatPanel, type ChatMessage } from './components/ChatPanel'
 import { FloorPlanPanel } from './components/FloorPlanPanel'
-import { MapPanel } from './components/MapPanel'
 import { NavBar, type Tab } from './components/NavBar'
 import { Settings } from './components/Settings'
 import { StatusBar } from './components/StatusBar'
@@ -15,6 +14,9 @@ import { useGeolocation } from './hooks/useGeolocation'
 import { Welcome } from './components/Welcome'
 import { PRESET_COORDS, toContext, useSettings } from './hooks/useSettings'
 import type { ChatResponse } from './types'
+
+// The map (and the Google Maps loader) is only downloaded when the Map tab is first opened.
+const MapPanel = lazy(() => import('./components/MapPanel').then((m) => ({ default: m.MapPanel })))
 
 function sessionId(): string {
   try {
@@ -44,6 +46,7 @@ export default function App() {
   const [state, setState] = useState<ChatResponse | null>(null)
   const [step, setStep] = useState(0)
   const [pending, setPending] = useState(false)
+  const [mapOpened, setMapOpened] = useState(false)
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const compass = useCompass()
   const position = useGeolocation(settings.use_location)
@@ -115,6 +118,8 @@ export default function App() {
   const phase = state?.phase ?? 'idle'
 
   // One-tap messages that match where the student is in the journey (the demo script, PLAN §7).
+  useEffect(() => { if (panel === 'map') setMapOpened(true) }, [panel])
+
   const suggestions =
     phase === 'indoor' || phase === 'arrived' ? ["I'm lost", 'I hurt my ankle']
     : phase === 'escalated' ? []
@@ -147,7 +152,14 @@ export default function App() {
             {panel === 'floorplan' && (
               route ? <FloorPlanPanel route={route} step={step} onStep={setStep} /> : <p className="panel-empty">No indoor route yet.</p>
             )}
-            {panel === 'map' && <MapPanel route={state?.ui.outdoor_route ?? null} />}
+            {/* Once opened the map stays mounted (hidden), so switching tabs does not reload it. */}
+            {mapOpened && (
+              <div hidden={panel !== 'map'}>
+                <Suspense fallback={<div className="skeleton" role="status" aria-label="Loading map" />}>
+                  <MapPanel route={state?.ui.outdoor_route ?? null} visible={panel === 'map'} />
+                </Suspense>
+              </div>
+            )}
             {escalation && (
               <div className="escalation" role="alert" aria-label="Contact reception">
                 <p>{escalation.message}</p>

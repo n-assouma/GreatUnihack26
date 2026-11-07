@@ -253,3 +253,28 @@ input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px v
   .voice-bars span { --h: .5; }
   .voice-dots i { opacity: 1; }
 }
+
+/* Journey panel: summary, route strip, map, timeline */
+.mappanel { max-height: 46dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.journey-summary { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 14px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; gap: 8px; }
+.stat-label { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.stat-value { font-family: var(--serif); font-size: 1.55rem; line-height: 1.2; }
+.journey-status { margin: 8px 0 0; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; font-size: .88rem; }
+.route-strip { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.strip-item { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-weight: 600; font-size: .9rem; }
+.strip-item + .strip-item::before { content: '\203A'; color: var(--muted); margin-right: 2px; }
+.line-badge { display: inline-grid; place-items: center; min-width: 28px; height: 24px; padding: 0 7px; border-radius: 6px; background: var(--brand); color: var(--brand-fg); font-weight: 800; font-size: .85rem; }
+.timeline { list-style: none; margin: 0; padding: 0; }
+.tl-item { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line); }
+.tl-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--brand-soft); color: var(--brand); }
+.tl-icon .line-badge { background: transparent; color: var(--brand); border: 2px solid var(--brand); }
+.tl-body p { margin: 0; }
+.tl-time { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; }
+.map-box { position: relative; }
+.map-expand { position: absolute; top: 8px; right: 8px; z-index: 2; min-height: 44px; box-shadow: 0 1px 4px rgb(0 0 0 / .3); }
+.map-box.expanded { position: fixed; inset: 0; z-index: 55; height: auto; border-radius: 0; border: 0; background: var(--bg); }
+.map-box.expanded .map-expand { top: calc(8px + env(safe-area-inset-top)); }
+.map-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line); }
+.map-sheet .journey-summary { border: 0; padding: 0; background: none; }
+.skeleton { height: 170px; border-radius: 12px; background: var(--line); animation: blink 1.4s ease-in-out infinite; }
