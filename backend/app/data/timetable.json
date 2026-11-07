@@ -1,0 +1,57 @@
+{
+  "_source": "PLACEHOLDER pending Nael's real timetable screenshot (PLAN §5 D1). Shape is final; the entries get retyped from the screenshot. The demo class is Lecture Theatre A, Nancy Rothwell (room id THEATRE_A), as CONTRACTS requires.",
+  "_weekday": "0 = Monday ... 6 = Sunday (Python convention)",
+  "_timezone": "Europe/London (UTC+00:00 in November)",
+  "entries": [
+    {
+      "course": "Machine Learning",
+      "type": "Lecture",
+      "weekday": 0,
+      "start": "09:00",
+      "end": "10:00",
+      "building_id": "nancy_rothwell",
+      "room_id": "THEATRE_A",
+      "room_label": "Lecture Theatre A"
+    },
+    {
+      "course": "Algorithms and Data Structures",
+      "type": "Lecture",
+      "weekday": 1,
+      "start": "11:00",
+      "end": "12:00",
+      "building_id": "alan_turing",
+      "room_id": "AT_G.205",
+      "room_label": "Alan Turing Building, G.205"
+    },
+    {
+      "course": "Machine Learning",
+      "type": "Lecture",
+      "weekday": 2,
+      "start": "09:00",
+      "end": "10:00",
+      "building_id": "nancy_rothwell",
+      "room_id": "THEATRE_A",
+      "room_label": "Lecture Theatre A"
+    },
+    {
+      "course": "Software Engineering",
+      "type": "Lab",
+      "weekday": 3,
+      "start": "14:00",
+      "end": "16:00",
+      "building_id": "nancy_rothwell",
+      "room_id": "3A.041",
+      "room_label": "Room 3A.041"
+    },
+    {
+      "course": "Machine Learning",
+      "type": "Tutorial",
+      "weekday": 4,
+      "start": "09:00",
+      "end": "10:00",
+      "building_id": "nancy_rothwell",
+      "room_id": "THEATRE_A",
+      "room_label": "Lecture Theatre A"
+    }
+  ]
+}
