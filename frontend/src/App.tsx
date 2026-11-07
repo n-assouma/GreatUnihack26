@@ -22,6 +22,9 @@ function sessionId(): string {
   }
 }
 
+// Cap the in-memory history so a very long session cannot grow the DOM without bound.
+const MAX_MESSAGES = 500
+
 type View = 'welcome' | 'onboarding' | 'main'
 
 function initialView(): View {
@@ -36,6 +39,7 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [state, setState] = useState<ChatResponse | null>(null)
   const [step, setStep] = useState(0)
+  const [pending, setPending] = useState(false)
   const [panel, setPanel] = useState<'map' | 'floorplan' | 'hide'>('hide')
   const lastSuggested = useRef<string | null>(null)
 
@@ -53,12 +57,17 @@ export default function App() {
     const suggestion = res.ui.open_panel ?? null
     if (suggestion && suggestion !== lastSuggested.current) setPanel(suggestion)
     lastSuggested.current = suggestion
-    if (res.reply) setMessages((m) => [...m, { role: 'assistant', text: res.reply!, agent: res.agent, guardrails: res.guardrails }])
+    if (res.reply) setMessages((m) => [...m, { role: 'assistant' as const, text: res.reply!, agent: res.agent, guardrails: res.guardrails }].slice(-MAX_MESSAGES))
   }
 
   async function send(text: string) {
-    setMessages((m) => [...m, { role: 'user', text }])
-    apply(await api.chat(sid, text, context))
+    setMessages((m) => [...m, { role: 'user' as const, text }].slice(-MAX_MESSAGES))
+    setPending(true)
+    try {
+      apply(await api.chat(sid, text, context))
+    } finally {
+      setPending(false)
+    }
   }
 
   async function confirm(yes: boolean) {
@@ -112,7 +121,7 @@ export default function App() {
                 )}
               </div>
             )}
-            <ChatPanel messages={messages} onSend={send} />
+            <ChatPanel messages={messages} pending={pending} onSend={send} />
           </div>
         )}
         {tab === 'calendar' && (
