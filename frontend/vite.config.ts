@@ -9,6 +9,8 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Allow testing on a phone through an ngrok HTTPS tunnel (the mic and compass need HTTPS on phones).
+    allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.app', '.ngrok.dev', '.ngrok.io'],
     proxy: {
       '/api': BACKEND,
       '/static': BACKEND,
