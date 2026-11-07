@@ -31,13 +31,15 @@ const ERROR_TEXT: Record<string, string> = {
 interface Options {
   /** Called with the final words once the person stops talking. */
   onFinal: (text: string) => void
+  /** Speaking speed, 1 = normal. Applied as the playback rate, so it works for ElevenLabs and the browser voice alike. */
+  rate?: number
 }
 
 /**
  * Voice in and out. In: browser speech recognition (en-GB). Out: POST /api/tts (ElevenLabs on the backend),
  * and if that is unavailable (503, no key, offline) the browser's own voice. The app works without any of it.
  */
-export function useSpeech({ onFinal }: Options) {
+export function useSpeech({ onFinal, rate = 1 }: Options) {
   const [listening, setListening] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [transcript, setTranscript] = useState('')
@@ -50,6 +52,8 @@ export function useSpeech({ onFinal }: Options) {
   const run = useRef(0) // bumped on every speak() / cancel() so a late response cannot play over a newer one
   const onFinalRef = useRef(onFinal)
   onFinalRef.current = onFinal
+  const rateRef = useRef(rate)
+  rateRef.current = rate
 
   const supported = typeof window !== 'undefined' && Boolean(ctor())
 
@@ -78,6 +82,7 @@ export function useSpeech({ onFinal }: Options) {
       const url = URL.createObjectURL(blob)
       audioUrl.current = url
       const el = new Audio(url)
+      el.playbackRate = rateRef.current // pitch is preserved by default, so faster does not sound squeaky
       audio.current = el
       el.onended = finish
       el.onerror = finish
@@ -94,6 +99,7 @@ export function useSpeech({ onFinal }: Options) {
     if ('speechSynthesis' in window) {
       const u = new SpeechSynthesisUtterance(text)
       u.lang = 'en-GB'
+      u.rate = rateRef.current
       const voice = window.speechSynthesis.getVoices().find((v) => v.lang === 'en-GB')
       if (voice) u.voice = voice
       u.onend = finish

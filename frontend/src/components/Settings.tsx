@@ -123,6 +123,20 @@ export function Settings({ settings, onChange, onDone, onboarding, sample }: Pro
       </div>
 
       <h2>Voice</h2>
+      <div className="card">
+        <strong>Voice speed</strong>
+        <p className="muted">How fast the assistant speaks.</p>
+        <div className="choice-row" role="group" aria-label="Voice speed">
+          {[{ v: 1, l: 'Normal' }, { v: 1.2, l: 'Faster' }, { v: 1.4, l: 'Fastest' }].map((o) => (
+            <button key={o.v} className="choice" aria-pressed={settings.voice_speed === o.v} onClick={() => onChange({ voice_speed: o.v })}>{o.l}</button>
+          ))}
+        </div>
+      </div>
+      <Suggestion
+        icon="volume" title="More instructions at a time"
+        text="When it reads a route aloud, give the whole journey, or the next few steps, instead of one instruction at a time."
+        value={settings.more_instructions} onChange={(v) => onChange({ more_instructions: v })}
+      />
       {sample && (
         <div className="card">
           <strong>Test the voice</strong>

@@ -41,6 +41,7 @@ export function StepCard({ route, index, onChange, heading, compass, onCompass }
       <div>
         <strong>{step.turn === 'arrive' ? 'You have arrived' : a.label}</strong>
         <p>{step.instruction}</p>
+        {route.steps[index + 1] && <p className="next-up"><span>Then:</span> {route.steps[index + 1].instruction}</p>}
         <small>Step {index + 1} of {last + 1} · Floor {step.floor} · {COMPASS_NOTE[compass]}</small>
       </div>
       <div className="row">

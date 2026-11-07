@@ -9,6 +9,8 @@ export interface Settings {
   transport_pref: 'walk' | 'run' | 'bus' | null
   voice: boolean
   use_location: boolean
+  voice_speed: number        // 1 = normal; applied when audio is played, so it works for every voice
+  more_instructions: boolean // read the whole journey / the next steps, not one instruction at a time
   high_contrast: boolean
   large_text: boolean
   demo_mode: boolean
@@ -22,6 +24,8 @@ export const DEFAULT_SETTINGS: Settings = {
   transport_pref: null,
   voice: false,
   use_location: false,
+  voice_speed: 1.2,
+  more_instructions: true,
   high_contrast: false,
   large_text: false,
   demo_mode: false,

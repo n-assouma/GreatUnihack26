@@ -15,6 +15,7 @@ import { Welcome } from './components/Welcome'
 import { useCompass } from './hooks/useCompass'
 import { useGeolocation } from './hooks/useGeolocation'
 import { useSpeech } from './hooks/useSpeech'
+import { indoorUpcoming, outdoorScript, stepScript } from './lib/script'
 import { PRESET_COORDS, toContext, useSettings } from './hooks/useSettings'
 import type { ChatResponse } from './types'
 
@@ -62,13 +63,16 @@ export default function App() {
       if (tabRef.current !== 'chat') voiceElsewhere.current = true
       void send(text)
     },
+    rate: settings.voice_speed,
   })
   const voiceOn = settings.voice || settings.visual_impairment
   const voiceOnRef = useRef(voiceOn)
   voiceOnRef.current = voiceOn
   const speakRef = useRef(speech.speak)
   speakRef.current = speech.speak
-  const stepsForVoice = state?.ui.indoor_route?.steps
+  const moreRef = useRef(settings.more_instructions || settings.visual_impairment)
+  moreRef.current = settings.more_instructions || settings.visual_impairment
+  const routeForVoice = state?.ui.indoor_route ?? null
 
   // apply() runs from timers, so read the current tab through a ref instead of a stale closure.
   const tabRef = useRef(tab)
@@ -92,8 +96,7 @@ export default function App() {
   // Read each new indoor step aloud when the person moves between steps (the first step is in the reply).
   useEffect(() => {
     if (!voiceOnRef.current || step === 0) return
-    const instruction = stepsForVoice?.[step]?.instruction
-    if (instruction) void speakRef.current(instruction)
+    if (routeForVoice) void speakRef.current(stepScript(routeForVoice, step, moreRef.current))
   }, [step]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function finishSetup() {
@@ -125,7 +128,15 @@ export default function App() {
     if ((fromTick || byVoiceElsewhere) && res.reply) {
       setToast({ id: Date.now(), text: res.reply, agent: res.agent, action: action && { label: action.tab === 'map' ? 'Open map' : 'Open floor plan', tab: action.tab } })
     }
-    if (res.reply && (voiceOnRef.current || byVoiceElsewhere)) void speakRef.current(res.reply)
+    if (res.reply && (voiceOnRef.current || byVoiceElsewhere)) {
+      // Say more than the on-screen reply: the rest of the bus journey, or the next indoor steps.
+      let spoken = res.reply
+      if (!fromTick && moreRef.current) {
+        if (inside && i) spoken += ` ${indoorUpcoming(i, 0, 2)}`
+        else if (o) spoken += ` ${outdoorScript(o)}`
+      }
+      void speakRef.current(spoken)
+    }
     if (res.reply) setMessages((m) => [...m, { role: 'assistant' as const, text: res.reply!, agent: res.agent, guardrails: res.guardrails, action }].slice(-MAX_MESSAGES))
   }
 

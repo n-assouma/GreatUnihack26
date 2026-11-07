@@ -330,3 +330,6 @@ input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px v
 .voice-fab:hover:not(:disabled) { background: var(--brand-hover); border-color: var(--brand-hover); }
 .voice-fab[aria-pressed="true"] { animation: voice-beat 1.1s ease-in-out infinite; }
 .has-fab .app, .has-fab .page { padding-bottom: 80px; }
+
+.next-up { margin: 2px 0 0; font-size: .85rem; opacity: .92; }
+.next-up span { font-weight: 700; }
