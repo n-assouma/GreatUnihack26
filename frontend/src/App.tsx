@@ -103,7 +103,7 @@ export default function App() {
         {tab === 'chat' && (
           <div className="app">
             <StatusBar demo={settings.demo_mode} nextClass={state?.ui.next_class ?? null} outdoor={state?.ui.outdoor_route ?? null} phase={state?.phase ?? 'idle'} />
-            {state?.phase === 'indoor' && route && (
+            {(state?.phase === 'indoor' || state?.phase === 'arrived') && route && (
               <StepCard route={route} index={step} onChange={setStep} />
             )}
             <div className="panel-tabs" role="tablist">

@@ -25,7 +25,7 @@ export function StepCard({ route, index, onChange }: Props) {
     <section className="step-card" aria-label="Current step">
       <span className="arrow" style={{ transform: `rotate(${a.rot}deg)` }} aria-hidden="true"><Icon name="arrow" size={34} /></span>
       <div>
-        <strong>{a.label}</strong>
+        <strong>{step.turn === 'arrive' ? 'You have arrived' : a.label}</strong>
         <p>{step.instruction}</p>
         <small>Step {index + 1} of {last + 1} · Floor {step.floor}</small>
       </div>
