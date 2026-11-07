@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 from functools import lru_cache
+from typing import Callable
 
 from . import llm
 from .models import GuardrailEvent
@@ -111,6 +112,11 @@ def _should_escalate_lost(state: SessionState) -> bool:
     Never on failed locates alone: with the real building graph "by the lifts" is a
     perfectly reasonable answer that comes back ambiguous, and asking "which lift?"
     twice must not turn into an unprompted offer to call reception.
+
+    Both counters only ever move on hard evidence — `said_lost_count` when the
+    student says it, `lost_count` when a locate genuinely fails. Neither moves on a
+    classifier guess, because one misclassification would then combine with a real
+    first "I'm lost" to trip the second clause below.
     """
     if state.said_lost_count >= 2:
         return True
@@ -239,13 +245,20 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
         )
         return InputVerdict(events, escalate="injured")
     if category == "lost":
-        state.lost_count += 1
-        state.said_lost_count += 1
-        if _should_escalate_lost(state):
-            events.append(
-                _event("input", "lost", "escalated", "Classifier flagged the user as lost twice.")
+        # Deliberately advances no counter. A model's guess is weak evidence, and
+        # letting it count was offering reception on what the student experienced as
+        # their FIRST "I'm lost" (A1 hit this; it was intermittent because it depended
+        # on the classifier). Escalation counters move only on hard evidence: the
+        # student saying it, or a locate that actually failed.
+        events.append(
+            _event(
+                "input",
+                "lost",
+                "modified",
+                "Student may be lost; asking what they can see rather than counting it.",
             )
-            return InputVerdict(events, escalate="lost")
+        )
+        return InputVerdict(events, reask_position=True)
 
     return InputVerdict(events)
 
@@ -460,14 +473,30 @@ def _trim_words(text: str, limit: int = MAX_REPLY_WORDS) -> str:
 
 
 def output_guardrail(
-    text: str, state: SessionState, fallback: str | None = None
+    text: str,
+    state: SessionState,
+    fallback: str | Callable[[], str] | None = None,
 ) -> tuple[str, list[GuardrailEvent]]:
+    """`fallback` may be a callable, and should be when building it costs anything.
+
+    Building the template reply runs real tools - a live Google Routes call, a
+    locate, a route plan - so passing it eagerly meant every *successful* LLM turn
+    also made those calls and mutated state behind the agent's back. It is now only
+    built if a replacement is actually needed.
+    """
     events: list[GuardrailEvent] = []
     reply = (text or "").strip()
 
+    resolved: list[str | None] = []
+
+    def replacement() -> str | None:
+        if not resolved:
+            resolved.append(fallback() if callable(fallback) else fallback)
+        return resolved[0]
+
     if not reply:
         return (
-            fallback or "Sorry, I didn't catch that. Could you say it again?",
+            replacement() or "Sorry, I didn't catch that. Could you say it again?",
             [_event("output", "empty_reply", "modified", "Replaced an empty reply.")],
         )
 
@@ -481,7 +510,7 @@ def output_guardrail(
                 "Removed a mention of stairs: this user cannot use them.",
             )
         )
-        reply = fallback or "Take the lift — I'll guide you to the nearest one."
+        reply = replacement() or "Take the lift — I'll guide you to the nearest one."
         if _STAIRS_ANY.search(reply):  # the fallback mentioned them too
             reply = "Take the lift — I'll guide you to the nearest one."
 
@@ -515,7 +544,7 @@ def output_guardrail(
                 f"Removed detail no tool returned: {', '.join(sorted(set(invented)))}.",
             )
         )
-        reply = fallback or (
+        reply = replacement() or (
             "Let me check that properly before I tell you — could you say which room you need?"
         )
 

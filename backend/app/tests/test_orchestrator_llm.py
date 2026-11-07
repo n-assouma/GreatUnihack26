@@ -269,21 +269,27 @@ def test_an_ambiguous_location_does_not_escalate_on_its_own(scripted):
 
 
 def test_saying_lost_once_then_an_unresolvable_location_does_escalate(scripted):
-    """Distress plus a position we cannot pin down is when a human is warranted."""
+    """Distress plus a position we cannot pin down is when a human is warranted.
+
+    Uses "by the lifts", which the real graph genuinely cannot resolve (null plus
+    three candidates) — unlike vaguer text, which it often does resolve, in which
+    case the soft signal is correctly cleared instead.
+    """
+    from app import guardrails
+
     scripted(
-        llm.LlmResult(ok=True, tool_calls=[tool_call("locate_user", {"text": "no idea"})]),
-        llm.LlmResult(ok=True, text="Can you see a lift or a door?"),
+        llm.LlmResult(ok=True, tool_calls=[tool_call("locate_user", {"text": "by the lifts"})]),
+        llm.LlmResult(ok=True, text="Which lift core are you at?"),
     )
     client.post("/api/tick", json={"session_id": "s-esc", "context": {**PLAIN, **AT_BUILDING}})
 
-    call("I'm lost", {**PLAIN, **AT_BUILDING}, session_id="s-esc")  # said_lost = 1
-    body = call("somewhere near a corridor", {**PLAIN, **AT_BUILDING}, session_id="s-esc")
+    call("I'm lost", {**PLAIN, **AT_BUILDING}, session_id="s-esc")  # said_lost = 1, lost = 1
+    call("I think I'm by the lifts", {**PLAIN, **AT_BUILDING}, session_id="s-esc")  # locate fails
 
     state = get_session("s-esc")
-    assert state.lost_count >= 2 and state.said_lost_count == 1
-    # The next distress signal escalates.
-    final = call("I'm lost", {**PLAIN, **AT_BUILDING}, session_id="s-esc")
-    assert final["ui"]["escalation"] is not None, final
+    assert state.said_lost_count == 1, "only the student's own words count here"
+    assert state.lost_count >= 2, "a failed locate is the second hard signal"
+    assert guardrails._should_escalate_lost(state) is True
 
 
 def test_an_injury_the_classifier_calls_an_emergency_still_gets_a_route(monkeypatch):
@@ -336,6 +342,93 @@ def test_the_classifier_can_still_escalate_a_genuine_emergency(monkeypatch):
     body = call("there is smoke coming from the lift", {**PLAIN, **AT_BUILDING}, "s-real-emg")
     assert body["phase"] == "escalated", body
     assert body["ui"]["escalation"]["needs_confirmation"] is True
+
+
+def test_a_misclassified_message_does_not_bring_escalation_forward(monkeypatch):
+    """A1's bug: the classifier branch bumped said_lost_count, so one misclassified
+    message plus a genuine first "I'm lost" offered reception on what the student
+    experienced as the first time. Counters move only on hard evidence."""
+    monkeypatch.setattr(llm, "available", lambda: True)
+    monkeypatch.setattr(llm, "chat", ScriptedLLM(llm.LlmResult(ok=True, text="ok")))
+    # The classifier guesses "lost" on a message containing no lost-words at all.
+    monkeypatch.setattr(llm, "classify", lambda system, text: {"category": "lost"})
+
+    first = call("which way is the lecture theatre?", {**PLAIN, **AT_BUILDING}, "s-mis")
+    assert first["ui"]["escalation"] is None
+    state = get_session("s-mis")
+    assert state.said_lost_count == 0, "a model guess must not count as the student saying it"
+    assert state.lost_count == 0, "nor as a failed locate"
+
+    # Now the student really says it for the first time: still no reception offer.
+    monkeypatch.setattr(llm, "classify", lambda system, text: {"category": "on_topic"})
+    second = call("I'm lost", {**PLAIN, **AT_BUILDING}, "s-mis")
+    assert second["ui"]["escalation"] is None, second
+    assert second["phase"] != "escalated"
+
+    # The second genuine time does escalate, so F9 is intact.
+    third = call("I'm lost", {**PLAIN, **AT_BUILDING}, "s-mis")
+    assert third["ui"]["escalation"]["needs_confirmation"] is True
+
+
+def test_being_located_again_clears_the_soft_lost_signal(scripted):
+    """Confusion earlier in a session must not count towards escalating later."""
+    scripted(
+        llm.LlmResult(ok=True, tool_calls=[tool_call("locate_user", {"text": "east entrance"})]),
+        llm.LlmResult(ok=True, text="You're at the East entrance."),
+    )
+    state = get_session("s-clear")
+    state.lost_count = 3  # earlier confusion
+
+    client.post("/api/tick", json={"session_id": "s-clear", "context": {**PLAIN, **AT_BUILDING}})
+    call("I'm at the east entrance", {**PLAIN, **AT_BUILDING}, "s-clear")
+
+    assert get_session("s-clear").lost_count == 0
+
+
+def test_a_successful_llm_turn_does_not_run_the_template_tools(scripted, monkeypatch):
+    """The template reply was passed to the output guardrail eagerly as its fallback,
+    so every *successful* LLM turn also ran the template path's tools — a second,
+    billed Google Routes call that was thrown away, plus locate/route calls that
+    mutated state behind the agent's back. It is only built if actually needed."""
+    from app import tools
+    from app.state import set_phase
+
+    calls: list[str] = []
+    for name in ("plan_outdoor_route", "locate_user", "plan_indoor_route"):
+
+        def spy(*args, _name=name, **kwargs):
+            calls.append(_name)
+            return {"ok": False, "note": "spied"}
+
+        monkeypatch.setattr(tools, name, spy)
+
+    # Put the session where the template path would reach for a route: outdoor, with
+    # a known class and a chosen mode. This is the state in which the discarded
+    # fallback used to make a second, billed Google Routes call.
+    state = get_session("s-lazy")
+    state.next_class = {
+        "title": "COMP15111 (Drop-in)",
+        "start": "2026-11-09T10:00:00+00:00",
+        "end": "2026-11-09T11:00:00+00:00",
+        "building_id": "nancy_rothwell",
+        "room_id": "THEATRE_A",
+        "room_label": "Lecture Theatre A",
+    }
+    state.transport_pref = "bus"
+    set_phase(state, "outdoor")
+
+    # The model answers in words, asking for no tools at all.
+    scripted(llm.LlmResult(ok=True, text="The bus gets you there with time to spare."))
+
+    body = call(
+        "and then what?",
+        {**PLAIN, "lat": 53.445273, "lng": -2.215431, "demo_time": "2026-11-09T09:30:00+00:00",
+         "transport_pref": "bus"},
+        session_id="s-lazy",
+    )
+
+    assert body["reply"] == "The bus gets you there with time to spare."
+    assert calls == [], f"the discarded fallback ran real tools: {calls}"
 
 
 def test_asking_for_a_person_still_escalates():
