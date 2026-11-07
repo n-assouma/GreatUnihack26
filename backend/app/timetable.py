@@ -15,6 +15,11 @@ from pathlib import Path
 DATA_FILE = Path(__file__).resolve().parent / "data" / "timetable.json"
 LOOKAHEAD_DAYS = 7
 
+# How long after a class starts it is still the one you are trying to get to.
+# A student five minutes late still wants directions to that room; half an hour in,
+# what they need is the next class, not timings for one they are already sitting in.
+LATE_GRACE_MIN = 20
+
 
 def _load_entries() -> list[dict]:
     try:
@@ -48,11 +53,17 @@ def _to_class_info(entry: dict, start: datetime, end: datetime) -> dict:
 
 
 def next_class(now: datetime) -> dict | None:
-    """The next class that has not finished yet, as a ClassInfo dict."""
+    """The class the student is trying to get to, as a ClassInfo dict.
+
+    Upcoming classes, plus one that started within `LATE_GRACE_MIN` — so arriving
+    late is still supported, but a class you are already well into is not reported
+    as the one you are travelling to.
+    """
     entries = _load_entries()
     if not entries:
         return None
 
+    cutoff = now - timedelta(minutes=LATE_GRACE_MIN)
     candidates: list[tuple[datetime, dict]] = []
     for offset in range(LOOKAHEAD_DAYS + 1):
         day = now.date() + timedelta(days=offset)
@@ -61,7 +72,7 @@ def next_class(now: datetime) -> dict | None:
                 continue
             start = _at(day, entry.get("start", ""), now.tzinfo)
             end = _at(day, entry.get("end", ""), now.tzinfo)
-            if start is None or end is None or end <= now:
+            if start is None or end is None or start <= cutoff or end <= now:
                 continue
             candidates.append((start, _to_class_info(entry, start, end)))
 
