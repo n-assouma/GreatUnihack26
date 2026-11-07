@@ -11,6 +11,7 @@ out of happening by the model or by the user.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -46,7 +47,14 @@ class SessionState:
 
     # profile
     profile: Accessibility = field(default_factory=Accessibility)
+    # The Settings toggle, resent on every request by the frontend.
     transport_pref: TransportMode | None = None
+    # A mode the user named in a message. This outranks the Settings value, because
+    # saying "I'll walk" has to beat a stale "Run" left in someone's Settings — but
+    # it is cleared the moment Settings changes, so changing Settings still works.
+    spoken_transport: TransportMode | None = None
+    _seen_context_pref: TransportMode | None = None
+    _seen_any_context_pref: bool = False
     # Set when the user *says* they are injured ("I hurt my ankle"). Kept apart from
     # `profile`, which is overwritten from the client context on every request.
     inferred_no_stairs: bool = False
@@ -100,6 +108,11 @@ class SessionState:
         return self.demo_time is not None
 
     @property
+    def transport(self) -> TransportMode | None:
+        """How they are travelling: what they last said, else the Settings value."""
+        return self.spoken_transport or self.transport_pref
+
+    @property
     def no_stairs(self) -> bool:
         """The single source of truth for accessible routing (F5). The toggle in the
         UI and anything the user told us both count."""
@@ -148,6 +161,14 @@ def apply_context(state: SessionState, ctx: ClientContext) -> None:
     state.profile = ctx.accessibility
     state.demo_time = ctx.demo_time
 
+    # A *changed* Settings value is a deliberate new choice, so it clears anything the
+    # user said earlier. An unchanged one is just the frontend resending the same
+    # toggle every request, and must not undo what they said a moment ago.
+    if not state._seen_any_context_pref or ctx.transport_pref != state._seen_context_pref:
+        if state._seen_any_context_pref:
+            state.spoken_transport = None
+        state._seen_any_context_pref = True
+        state._seen_context_pref = ctx.transport_pref
     if ctx.transport_pref is not None:
         state.transport_pref = ctx.transport_pref
     if ctx.lat is not None and ctx.lng is not None:
@@ -179,6 +200,24 @@ _JOURNEY_WORDS = ("get to", "getting to", "how do i get", "travel", "bus", "walk
 _POSITION_CUES = ("i'm at", "im at", "i am at", "i'm by", "im by", "i'm near", "im near",
                   "i am near", "i'm next to", "i'm outside", "im outside", "i'm standing",
                   "near the", "next to the", "by the", "at the", "outside the")
+
+
+# Whole-word so "run" does not match "running late" and "bus" does not match "busy".
+_TRANSPORT_WORDS: tuple[tuple[str, str], ...] = (
+    ("bus", r"\bbus(?:es)?\b"),
+    # "running late" and "run out of time" mean delayed, not "I'll run there".
+    ("run", r"\brun(?:ning)?\b(?!\s+(?:late|out|behind))|\bjog(?:ging)?\b"),
+    ("walk", r"\bwalk(?:ing)?\b|\bon foot\b"),
+)
+
+
+def transport_in_message(message: str) -> str | None:
+    """The travel mode the user just named, if any."""
+    text = message.lower()
+    for mode, pattern in _TRANSPORT_WORDS:
+        if re.search(pattern, text):
+            return mode
+    return None
 
 
 def _states_a_position(message: str) -> bool:
@@ -214,8 +253,16 @@ def advance_phase(state: SessionState, message: str = "") -> str | None:
     distance = distance_to_building(state)
     inside = distance is not None and distance < GEOFENCE_RADIUS_M
 
-    # Escalation owns the session until it is resolved or declined.
+    # Escalation owns the session until it is resolved or declined — except when the
+    # student plainly moves on instead of answering the card ("I'm at the East
+    # entrance"). Treating that as a decline stops one escalation from stranding the
+    # rest of the conversation, which is how a single wrong escalation cascaded into
+    # every later step failing.
     if state.phase == "escalated":
+        awaiting = (state.escalation or {}).get("needs_confirmation", False)
+        if awaiting and states_position:
+            state.escalation = None
+            set_phase(state, "indoor")
         return None
 
     # -> indoor: at the building, or the user says where in it they are (F12)

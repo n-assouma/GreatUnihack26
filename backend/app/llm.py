@@ -56,11 +56,27 @@ def available() -> bool:
     return bool(os.getenv("ANTHROPIC_API_KEY"))
 
 
+# litellm imports these only when completion() actually runs, so a missing one is
+# invisible until the first real call — which, with the key arriving last, means
+# during the demo. A3 hit exactly this on a fresh venv: every call died with
+# ModuleNotFoundError and we silently served templates while health said "real".
+LAZY_DEPENDENCIES = ("mcp",)
+
+
+def missing_dependencies() -> list[str]:
+    """litellm dependencies that are absent and would break calls at call time."""
+    import importlib.util
+
+    return [name for name in LAZY_DEPENDENCIES if importlib.util.find_spec(name) is None]
+
+
 def status() -> str:
-    """"real" | "mock" — for /api/health."""
+    """"real" | "degraded" | "mock" — for /api/health."""
     if not available():
         return "mock"
-    return "degraded" if _llm_ever_failed else "real"
+    if _llm_ever_failed or missing_dependencies():
+        return "degraded"
+    return "real"
 
 
 def _parse_tool_calls(message: object) -> list[ToolCall]:

@@ -153,31 +153,71 @@
           {
             "steps": [
               {
-                "staticDuration": "52s",
+                "staticDuration": "34s",
                 "navigationInstruction": {
                   "maneuver": "DEPART",
-                  "instructions": "Head north toward Denmark Rd"
+                  "instructions": "Head west"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "61s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "55s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "114s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_LEFT",
+                  "instructions": "Turn left toward Old Hall Ln"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "19s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_LEFT",
+                  "instructions": "Turn left onto Old Hall Ln"
+                },
+                "travelMode": "WALK"
+              },
+              {
+                "staticDuration": "632s",
+                "navigationInstruction": {
+                  "maneuver": "TURN_RIGHT",
+                  "instructions": "Turn right onto Wilmslow Rd/A6010\nContinue to follow Wilmslow Rd"
                 },
                 "travelMode": "WALK"
               },
               {
                 "staticDuration": "142s",
                 "navigationInstruction": {
-                  "maneuver": "TURN_RIGHT",
-                  "instructions": "Turn right onto Denmark Rd"
+                  "maneuver": "TURN_SLIGHT_RIGHT",
+                  "instructions": "Slight right onto Wilmslow Rd/B5117"
                 },
                 "travelMode": "WALK"
               },
               {
-                "staticDuration": "780s",
+                "staticDuration": "1440s",
                 "navigationInstruction": {
-                  "maneuver": "TURN_LEFT",
-                  "instructions": "Turn left onto Oxford Rd/B5117\nParts of this road are closed 6:00\u202fAM\u2009\u2013\u20099:00\u202fPM"
+                  "maneuver": "TURN_SLIGHT_RIGHT",
+                  "instructions": "Slight right to stay on Wilmslow Rd/B5117\nContinue to follow B5117\nParts of this road are closed 6:00\u202fAM\u2009\u2013\u20099:00\u202fPM"
                 },
                 "travelMode": "WALK"
               },
               {
-                "staticDuration": "67s",
+                "staticDuration": "55s",
                 "navigationInstruction": {
                   "maneuver": "TURN_RIGHT",
                   "instructions": "Turn right onto Booth St E"
@@ -185,7 +225,7 @@
                 "travelMode": "WALK"
               },
               {
-                "staticDuration": "16s",
+                "staticDuration": "18s",
                 "navigationInstruction": {
                   "maneuver": "TURN_LEFT",
                   "instructions": "Turn left"
@@ -203,9 +243,9 @@
             ]
           }
         ],
-        "duration": "1075s",
+        "duration": "2588s",
         "polyline": {
-          "encodedPolyline": "wkheIxrrL_@Lg@hAKHWyBgAaIGWMPy@t@o@^[TQRcAr@iAn@m@l@QHiBbCQLu@|@O\\u@x@YTcCnCM\\uBbCc@b@_Ax@oAnAgBjAa@FEPkAz@]XsCbCOCMN}@_E]JMc@IO"
+          "encodedPolyline": "}oeeIluoLB~BMAIWg@?FjCQAGIQa@G?ME]DIRCZ@fCCZQf@]ZcAXB`@_@H]XaCpD_AjAa@\\mB~@m@RYLW?MLmAh@m@d@M@wAjA_Ah@m@h@[\\E@IPIAk@h@aA^]Dg@ZUTUDg@VETa@FOJi@VIBg@h@[VOZe@l@y@rA}@bAu@v@YN_@TUBQFQNi@FSNoAf@g@L{@\\qAr@STiEpCYHq@b@k@d@oEzBqBp@{A`@qB|@w@j@e@h@e@\\UHcBtAO@wApAsA`Be@z@s@|@ULeAfAg@p@OVoGfH{BpBwBzAGTICmAdA_Ap@ICkB`BMNs@aDi@TMc@IO"
         }
       }
     ]

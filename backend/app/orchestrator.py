@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 from . import agents, guardrails, llm, timetable, tools
 from .models import AgentName, GuardrailEvent
-from .state import SessionState, advance_phase
+from .state import SessionState, advance_phase, transport_in_message
 
 MAX_ROUNDS = 6
 
@@ -57,6 +57,12 @@ def run_turn(state: SessionState, message: str) -> TurnResult:
         reply = (state.escalation or {}).get("message", "Shall I get someone to help you?")
         state.remember("assistant", reply)
         return TurnResult(reply, state.active_agent, events, used_llm=False)
+
+    # What the user just said about how they are travelling beats a stale Settings
+    # toggle — the one-tap chips send exactly "I'll take the bus" / "I'll walk".
+    named_mode = transport_in_message(message)
+    if named_mode:
+        state.spoken_transport = named_mode  # type: ignore[assignment]
 
     # --- the phase machine, before the LLM, so mode-switching is deterministic (F12) ---
     advance_phase(state, message)
@@ -238,10 +244,8 @@ def _template_reply(state: SessionState, message: str) -> str:
         return "I can't work out a route inside the building right now."
 
     if state.phase == "outdoor":
-        mode = state.transport_pref
-        if mode is None:
-            lowered = message.lower()
-            mode = next((option for option in ("bus", "run", "walk") if option in lowered), None)
+        # What they just said wins; the Settings toggle is only the default.
+        mode = transport_in_message(message) or state.transport
         if mode is None:
             lead = ""
             if next_class:

@@ -286,6 +286,58 @@ def test_saying_lost_once_then_an_unresolvable_location_does_escalate(scripted):
     assert final["ui"]["escalation"] is not None, final
 
 
+def test_an_injury_the_classifier_calls_an_emergency_still_gets_a_route(monkeypatch):
+    """A3's real-key bug, and it broke demo step 4 outright. A real classifier reads
+    "I hurt my ankle" as an emergency; the keyword stage has already judged that an
+    injury mentioned while asking for directions is an accessibility need. The code's
+    decision wins, and the override is visible as a badge."""
+    fake = ScriptedLLM(
+        llm.LlmResult(
+            ok=True,
+            tool_calls=[tool_call("locate_user", {"text": "East entrance"})],
+        ),
+        llm.LlmResult(
+            ok=True,
+            tool_calls=[
+                tool_call(
+                    "plan_indoor_route",
+                    {"start": "entrance_east", "destination": "THEATRE_A"},
+                    "c2",
+                )
+            ],
+        ),
+        llm.LlmResult(ok=True, text="Take the lift up to the first floor."),
+    )
+    monkeypatch.setattr(llm, "available", lambda: True)
+    monkeypatch.setattr(llm, "chat", fake)
+    # The real classifier's verdict on this message:
+    monkeypatch.setattr(llm, "classify", lambda system, text: {"category": "emergency"})
+
+    body = call(
+        "I'm at the East entrance and I hurt my ankle. Take me to Lecture Theatre A.",
+        {**PLAIN, **AT_BUILDING},
+        session_id="s-injury",
+    )
+
+    assert body["phase"] == "indoor", body
+    assert body["ui"]["escalation"] is None
+    assert body["ui"]["indoor_route"]["accessible"] is True
+    rules = [event["rule"] for event in body["guardrails"]]
+    assert "emergency_downgraded" in rules, rules
+    assert "no_stairs_inferred" in rules
+
+
+def test_the_classifier_can_still_escalate_a_genuine_emergency(monkeypatch):
+    """The counterweight: downgrading must not disarm F9."""
+    monkeypatch.setattr(llm, "available", lambda: True)
+    monkeypatch.setattr(llm, "classify", lambda system, text: {"category": "emergency"})
+    monkeypatch.setattr(llm, "chat", ScriptedLLM(llm.LlmResult(ok=True, text="ok")))
+
+    body = call("there is smoke coming from the lift", {**PLAIN, **AT_BUILDING}, "s-real-emg")
+    assert body["phase"] == "escalated", body
+    assert body["ui"]["escalation"]["needs_confirmation"] is True
+
+
 def test_asking_for_a_person_still_escalates():
     """The counterpart to the above: real requests for help must still get through."""
     body = call("I need help, can I talk to someone?", PLAIN, session_id="s-help")
