@@ -74,11 +74,11 @@ class OutdoorRoute(BaseModel):
 class IndoorStep(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    index: int
-    instruction: str
-    floor: int
-    from_node: str
-    to_node: str
+    index: int = 0
+    instruction: str = ""
+    floor: int = 0
+    from_node: str = ""
+    to_node: str = ""
     distance_m: float = 0.0
     bearing_deg: float | None = None  # null for lift/stairs
     turn: str = "straight"  # start|straight|slight_*|left|right|turn_around|lift|stairs|arrive
@@ -89,8 +89,8 @@ class IndoorStep(BaseModel):
 class FloorSegment(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    floor: int
-    image_url: str
+    floor: int = 0
+    image_url: str = ""
     points: list[list[float]] = Field(default_factory=list)  # pixel coords, walking order
     step_indices: list[int] = Field(default_factory=list)
 
@@ -98,8 +98,8 @@ class FloorSegment(BaseModel):
 class IndoorRoute(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    start_node: str
-    destination_id: str
+    start_node: str = ""
+    destination_id: str = ""
     accessible: bool = False
     total_distance_m: float = 0.0
     steps: list[IndoorStep] = Field(default_factory=list)
