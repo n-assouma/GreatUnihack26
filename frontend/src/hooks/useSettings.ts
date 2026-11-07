@@ -52,11 +52,12 @@ export function useSettings() {
   return [settings, update] as const
 }
 
-// DEMO_HOME_LAT_LNG and OUTSIDE_EAST_LAT_LNG are still TBD in docs/CONTRACTS.md §1.
-// Until the humans pick them, those presets send no coordinates (we do not invent any).
+// DEMO_HOME_LAT_LNG: Ashburne Hall, Whitworth Lane, Fallowfield (address chosen by the team on the board, D3;
+// coordinates looked up from OpenStreetMap). OUTSIDE_EAST_LAT_LNG is still TBD in docs/CONTRACTS.md §1:
+// until a human drops that pin the preset sends no coordinates (we do not invent any).
 export const PRESET_COORDS: Record<LocationPreset, { lat: number; lng: number } | null> = {
   gps: null,
-  home: null,
+  home: { lat: 53.44606, lng: -2.21565 },
   east: null,
 }
 

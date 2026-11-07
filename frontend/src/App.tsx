@@ -13,7 +13,7 @@ import { Toast, type ToastMessage } from './components/Toast'
 import { useCompass } from './hooks/useCompass'
 import { useGeolocation } from './hooks/useGeolocation'
 import { Welcome } from './components/Welcome'
-import { toContext, useSettings } from './hooks/useSettings'
+import { PRESET_COORDS, toContext, useSettings } from './hooks/useSettings'
 import type { ChatResponse } from './types'
 
 function sessionId(): string {
@@ -111,6 +111,19 @@ export default function App() {
   }
 
   const route = state?.ui.indoor_route ?? null
+  const hasOutdoor = Boolean(state?.ui.outdoor_route)
+  const phase = state?.phase ?? 'idle'
+
+  // One-tap messages that match where the student is in the journey (the demo script, PLAN §7).
+  const suggestions =
+    phase === 'indoor' || phase === 'arrived' ? ["I'm lost", 'I hurt my ankle']
+    : phase === 'escalated' ? []
+    : hasOutdoor ? ["I'm at the East entrance", "I've arrived", "I'm lost"]
+    : state?.ui.next_class ? ["I'll take the bus", "I'll walk", 'How do I get to class?']
+    : ['What is my next class?']
+
+  // Demo presets without coordinates send no position, so the bus route cannot start anywhere.
+  const presetMissing = settings.demo_mode && settings.location_preset !== 'gps' && PRESET_COORDS[settings.location_preset] === null
   const escalation = state?.ui.escalation ?? null
 
   return (
@@ -120,6 +133,7 @@ export default function App() {
         {tab === 'chat' && (
           <div className="app">
             <StatusBar demo={settings.demo_mode} nextClass={state?.ui.next_class ?? null} outdoor={state?.ui.outdoor_route ?? null} phase={state?.phase ?? 'idle'} />
+            {presetMissing && <p className="notice">Demo location has no coordinates yet, so no start point is sent. Pick Home or Real GPS in Settings.</p>}
             {(state?.phase === 'indoor' || state?.phase === 'arrived') && route && (
               <StepCard route={route} index={step} onChange={setStep} heading={compass.heading} compass={compass.status} onCompass={compass.status === 'on' || compass.status === 'waiting' ? compass.disable : compass.enable} />
             )}
@@ -147,7 +161,7 @@ export default function App() {
                 )}
               </div>
             )}
-            <ChatPanel messages={messages} pending={pending} onSend={send} />
+            <ChatPanel messages={messages} pending={pending} nextClass={state?.ui.next_class ?? null} suggestions={suggestions} onSend={send} />
           </div>
         )}
         {tab === 'calendar' && (

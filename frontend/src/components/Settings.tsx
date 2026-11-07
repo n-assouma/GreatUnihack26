@@ -125,7 +125,7 @@ export function Settings({ settings, onChange, onDone, onboarding }: Props) {
                 </button>
               ))}
             </div>
-            <p className="muted small">Home and East entrance coordinates are still to be chosen by the team.</p>
+            <p className="muted small">Home is Ashburne Hall. The East entrance pin is still to be chosen by the team, so that preset sends no position yet.</p>
           </div>
         )}
       </div>

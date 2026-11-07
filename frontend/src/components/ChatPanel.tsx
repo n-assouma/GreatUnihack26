@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { AgentName, GuardrailEvent } from '../types'
+import type { AgentName, ClassInfo, GuardrailEvent } from '../types'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -14,10 +14,12 @@ const NEAR_BOTTOM_PX = 80
 interface Props {
   messages: ChatMessage[]
   pending: boolean
+  nextClass: ClassInfo | null
+  suggestions: string[]
   onSend: (text: string) => void
 }
 
-export function ChatPanel({ messages, pending, onSend }: Props) {
+export function ChatPanel({ messages, pending, nextClass, suggestions, onSend }: Props) {
   const [text, setText] = useState('')
   const [showJump, setShowJump] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
@@ -58,7 +60,18 @@ export function ChatPanel({ messages, pending, onSend }: Props) {
     <section className="chat">
       <div className="messages-wrap">
         <div className="messages" ref={listRef} onScroll={onScroll} role="log" aria-live="polite" aria-label="Conversation">
-          {messages.length === 0 && <p className="chat-empty">Ask about your next class, your route, or where to go inside the building.</p>}
+          {messages.length === 0 && (nextClass ? (
+            <div className="card chat-intro">
+              <span className="agent-tag">Next class</span>
+              <strong>{nextClass.title}</strong>
+              <p className="muted">
+                {new Date(nextClass.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {nextClass.room_label}
+              </p>
+              <p>How are you getting there? Tap an option below, or ask me anything.</p>
+            </div>
+          ) : (
+            <p className="chat-empty">Ask about your next class, your route, or where to go inside the building.</p>
+          ))}
           {messages.map((m, i) => (
             <div key={i} className={`msg msg-${m.role}`}>
               {m.agent && <span className="agent-tag">{m.agent}</span>}
@@ -72,6 +85,13 @@ export function ChatPanel({ messages, pending, onSend }: Props) {
         </div>
         {showJump && <button className="jump" onClick={jumpToLatest}>Jump to latest</button>}
       </div>
+      {suggestions.length > 0 && (
+        <div className="quick" role="group" aria-label="Suggested messages">
+          {suggestions.map((s) => (
+            <button key={s} className="quick-btn" disabled={pending} onClick={() => onSend(s)}>{s}</button>
+          ))}
+        </div>
+      )}
       <form onSubmit={submit} className="row">
         <input
           value={text} onChange={(e) => setText(e.target.value)} maxLength={MAX_INPUT_CHARS}

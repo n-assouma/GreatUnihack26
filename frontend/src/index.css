@@ -211,3 +211,12 @@ input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px v
 .legs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .leg { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
 .leg p { margin: 0; }
+
+/* Suggested replies + next-class intro + demo notice */
+.quick { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0; scrollbar-width: none; flex: none; }
+.quick::-webkit-scrollbar { display: none; }
+.quick-btn { flex: none; min-height: 44px; border-radius: 999px; border-color: var(--brand); color: var(--brand); background: var(--surface); }
+.quick-btn:hover:not(:disabled) { background: var(--brand-soft); }
+.chat-intro { display: flex; flex-direction: column; gap: 2px; margin: auto 0; }
+.chat-intro p { margin: 0; } .chat-intro strong { font-size: 1.1rem; }
+.notice { margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: .85rem; font-weight: 600; }
