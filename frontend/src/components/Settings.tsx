@@ -66,6 +66,12 @@ export function Settings({ settings, onChange, onDone, onboarding }: Props) {
         value={settings.voice} onChange={(v) => onChange({ voice: v })}
       />
 
+      <Suggestion
+        icon="pin" title="Use my location"
+        text="Needed to plan your journey from where you are. It is only used while you use the app, and your browser will ask you first."
+        value={settings.use_location} onChange={(v) => onChange({ use_location: v })}
+      />
+
       <div className="card">
         <strong>How do you like to get to class?</strong>
         <p className="muted">We will suggest this first. You can always ask for something else.</p>

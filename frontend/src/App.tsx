@@ -11,6 +11,7 @@ import { StatusBar } from './components/StatusBar'
 import { StepCard } from './components/StepCard'
 import { Toast, type ToastMessage } from './components/Toast'
 import { useCompass } from './hooks/useCompass'
+import { useGeolocation } from './hooks/useGeolocation'
 import { Welcome } from './components/Welcome'
 import { toContext, useSettings } from './hooks/useSettings'
 import type { ChatResponse } from './types'
@@ -45,10 +46,11 @@ export default function App() {
   const [pending, setPending] = useState(false)
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const compass = useCompass()
+  const position = useGeolocation(settings.use_location)
   const [panel, setPanel] = useState<'map' | 'floorplan' | 'hide'>('hide')
   const lastSuggested = useRef<string | null>(null)
 
-  const context = toContext(settings, step, compass.heading)
+  const context = toContext(settings, step, compass.heading, position)
 
   // Display preferences are applied on <html> so the CSS tokens change everywhere.
   useEffect(() => {
@@ -89,9 +91,9 @@ export default function App() {
   }
 
   // Tick on load and whenever the demo time / location / accessibility settings change (PLAN F13).
-  const tickKey = JSON.stringify([settings.demo_mode, settings.demo_time, settings.location_preset, settings.no_stairs])
+  const tickKey = JSON.stringify([settings.demo_mode, settings.demo_time, settings.location_preset, settings.no_stairs, position && [position.lat.toFixed(4), position.lng.toFixed(4)]])
   useEffect(() => {
-    if (view === 'main') void api.tick(sid, toContext(settings, 0, compass.heading)).then((r) => apply(r, true))
+    if (view === 'main') void api.tick(sid, toContext(settings, 0, compass.heading, position)).then((r) => apply(r, true))
   }, [tickKey, view]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll /api/tick every 15 s (PLAN F13) using the latest settings and step, without re-creating the timer.

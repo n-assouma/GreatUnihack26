@@ -8,6 +8,7 @@ export interface Settings {
   visual_impairment: boolean
   transport_pref: 'walk' | 'run' | 'bus' | null
   voice: boolean
+  use_location: boolean
   high_contrast: boolean
   large_text: boolean
   demo_mode: boolean
@@ -20,6 +21,7 @@ export const DEFAULT_SETTINGS: Settings = {
   visual_impairment: false,
   transport_pref: null,
   voice: false,
+  use_location: false,
   high_contrast: false,
   large_text: false,
   demo_mode: false,
@@ -58,8 +60,11 @@ export const PRESET_COORDS: Record<LocationPreset, { lat: number; lng: number } 
   east: null,
 }
 
-export function toContext(s: Settings, current_step: number, heading: number | null = null): ClientContext {
-  const coords = s.demo_mode ? PRESET_COORDS[s.location_preset] : null
+export function toContext(
+  s: Settings, current_step: number, heading: number | null = null, position: { lat: number; lng: number } | null = null,
+): ClientContext {
+  // A demo preset with known coordinates wins; otherwise the live position (only if the user opted in).
+  const coords = (s.demo_mode ? PRESET_COORDS[s.location_preset] : null) ?? position
   return {
     ...(coords ?? {}),
     demo_time: s.demo_mode && s.demo_time ? new Date(s.demo_time).toISOString() : null,
