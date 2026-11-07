@@ -167,9 +167,9 @@ def test_a_destination_the_user_never_asked_for_is_corrected_to_the_class_room(s
     )
     state = get_session("s-llm")
     state.next_class = {
-        "title": "Machine Learning (Lecture)",
-        "start": "2026-11-09T09:00:00+00:00",
-        "end": "2026-11-09T10:00:00+00:00",
+        "title": "COMP15111 (Drop-in)",
+        "start": "2026-11-09T10:00:00+00:00",
+        "end": "2026-11-09T11:00:00+00:00",
         "building_id": "nancy_rothwell",
         "room_id": "THEATRE_A",
         "room_label": "Lecture Theatre A",
@@ -294,7 +294,7 @@ def test_asking_for_a_person_still_escalates():
 
 
 def test_timetable_endpoint_returns_the_week(scripted):
-    body = client.get("/api/timetable?demo_time=2026-11-09T08:20:00%2B00:00").json()
+    body = client.get("/api/timetable?demo_time=2026-11-09T09:20:00%2B00:00").json()
     assert len(body["classes"]) >= 3
     assert body["next_class"]["room_id"] == "THEATRE_A"
     starts = [item["start"] for item in body["classes"]]

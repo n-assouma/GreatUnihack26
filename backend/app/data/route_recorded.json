@@ -61,7 +61,7 @@
                         }
                       }
                     },
-                    "arrivalTime": "2026-11-09T08:51:35Z",
+                    "arrivalTime": "2026-11-09T09:50:35Z",
                     "departureStop": {
                       "name": "St Mary's (Stop B)",
                       "location": {
@@ -71,18 +71,18 @@
                         }
                       }
                     },
-                    "departureTime": "2026-11-09T08:46:06Z"
+                    "departureTime": "2026-11-09T09:45:06Z"
                   },
                   "localizedValues": {
                     "arrivalTime": {
                       "time": {
-                        "text": "8:51\u202fAM"
+                        "text": "9:50\u202fAM"
                       },
                       "timeZone": "Europe/London"
                     },
                     "departureTime": {
                       "time": {
-                        "text": "8:46\u202fAM"
+                        "text": "9:45\u202fAM"
                       },
                       "timeZone": "Europe/London"
                     }

@@ -1,57 +1,53 @@
 {
-  "_source": "PLACEHOLDER pending Nael's real timetable screenshot (PLAN §5 D1). Shape is final; the entries get retyped from the screenshot. The demo class is Lecture Theatre A, Nancy Rothwell (room id THEATRE_A), as CONTRACTS requires.",
+  "_source": "Nael's real University of Manchester timetable for Monday 9 November 2026, from his screenshot (PLAN §5 D1). Relayed by A3 on the board; typed in by A2.",
+  "_demo_substitution": "Real course codes, types and times are unchanged. The real rooms are in the Kilburn Building; they are replaced here with Nancy Rothwell rooms because only that building has indoor guidance (PLAN §5 D1). THEATRE_A and THEATRE_B are both on floor 1 and routable from all 3 entrances. Nothing else is altered.",
   "_weekday": "0 = Monday ... 6 = Sunday (Python convention)",
   "_timezone": "Europe/London (UTC+00:00 in November)",
+  "_fields": "`course` is the speakable unit code (the reply is read aloud); `ref` keeps the full timetable string from the screenshot for fidelity and is never spoken.",
   "entries": [
     {
-      "course": "Machine Learning",
-      "type": "Lecture",
+      "course": "COMP15111",
+      "ref": "COMP15111/DROP-IN2/01",
+      "type": "Drop-in",
       "weekday": 0,
-      "start": "09:00",
-      "end": "10:00",
+      "start": "10:00",
+      "end": "11:00",
       "building_id": "nancy_rothwell",
       "room_id": "THEATRE_A",
       "room_label": "Lecture Theatre A"
     },
     {
-      "course": "Algorithms and Data Structures",
-      "type": "Lecture",
-      "weekday": 1,
+      "course": "COMP16321",
+      "ref": "COMP16321/DROP-IN1/02",
+      "type": "Drop-in",
+      "weekday": 0,
       "start": "11:00",
       "end": "12:00",
-      "building_id": "alan_turing",
-      "room_id": "AT_G.205",
-      "room_label": "Alan Turing Building, G.205"
+      "building_id": "nancy_rothwell",
+      "room_id": "THEATRE_B",
+      "room_label": "Lecture Theatre B"
     },
     {
-      "course": "Machine Learning",
-      "type": "Lecture",
-      "weekday": 2,
-      "start": "09:00",
-      "end": "10:00",
+      "course": "COMP11120",
+      "ref": "COMP11120/EXAMPLES/SEM1/01",
+      "type": "Seminar",
+      "weekday": 0,
+      "start": "13:00",
+      "end": "14:00",
       "building_id": "nancy_rothwell",
       "room_id": "THEATRE_A",
       "room_label": "Lecture Theatre A"
     },
     {
-      "course": "Software Engineering",
-      "type": "Lab",
-      "weekday": 3,
+      "course": "COMP10120",
+      "ref": "COMP10120/LABORATORY1/SEM1/04 <08-11>",
+      "type": "Laboratory",
+      "weekday": 0,
       "start": "14:00",
-      "end": "16:00",
+      "end": "15:00",
       "building_id": "nancy_rothwell",
-      "room_id": "3A.041",
-      "room_label": "Room 3A.041"
-    },
-    {
-      "course": "Machine Learning",
-      "type": "Tutorial",
-      "weekday": 4,
-      "start": "09:00",
-      "end": "10:00",
-      "building_id": "nancy_rothwell",
-      "room_id": "THEATRE_A",
-      "room_label": "Lecture Theatre A"
+      "room_id": "THEATRE_B",
+      "room_label": "Lecture Theatre B"
     }
   ]
 }

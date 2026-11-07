@@ -10,7 +10,9 @@ import uuid
 import httpx
 
 BASE = "http://localhost:8000"
-DEMO_TIME = "2026-11-09T08:20:00+00:00"  # Monday, 40 min before the 09:00 class
+DEMO_TIME = "2026-11-09T09:40:00+00:00"  # Monday, 20 min before the real 10:00 class.
+# 09:40 is deliberate: the real bus takes 12 min, so this is the clock that produces
+# the "Hurry" chip PLAN §7 step 2 asks for. An earlier clock correctly reads on_time.
 HOME = {"lat": 53.4600, "lng": -2.2300}
 EAST = {"lat": 53.469093, "lng": -2.234591}
 
@@ -68,13 +70,15 @@ check(
     "1 next class",
     body,
     ("knows the class is in Lecture Theatre A", (ui.get("next_class") or {}).get("room_id") == "THEATRE_A"),
-    ("starts at 09:00", "T09:00" in ((ui.get("next_class") or {}).get("start") or "")),
+    ("starts at 10:00", "T10:00" in ((ui.get("next_class") or {}).get("start") or "")),
     ("mentions the room in the reply", "Lecture Theatre A" in (body.get("reply") or "")),
 )
 
 # 2. "I'll take the bus."
 body = chat("I'll take the bus", HOME)
 has_route = body["ui"].get("outdoor_route") is not None
+route = body["ui"].get("outdoor_route") or {}
+bus_leg = next((leg for leg in route.get("legs") or [] if leg["mode"] == "BUS"), None)
 check(
     "2 bus",
     body,
@@ -83,6 +87,12 @@ check(
         "either a real route, or an honest refusal with no invented line",
         has_route or "can't check" in (body.get("reply") or "").lower(),
     ),
+    # PLAN §7 step 2 wants the Hurry chip; DEMO_TIME is set to produce it.
+    ("status chip is Hurry at this demo clock", not has_route or route.get("status") == "hurry"),
+    ("the bus leg names a real line and stops",
+     not bus_leg or bool(bus_leg.get("line") and bus_leg.get("from_stop"))),
+    ("the leg list is short enough to show and speak", not has_route or len(route["legs"]) <= 5),
+    ("there is a polyline for the map", not has_route or bool(route.get("polyline"))),
 )
 if not has_route:
     print("       NOTE: no GOOGLE_MAPS_API_KEY, so the bus leg is declined (D5). Expected.")
