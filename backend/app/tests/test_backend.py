@@ -56,20 +56,49 @@ def test_next_class_comes_from_the_timetable():
     assert next_class["start"] > "2000"  # an ISO timestamp, not a placeholder
 
 
-def test_demo_clock_overrides_now():
-    """F10/D2: the demo time decides which class is "next"."""
+def next_class_at(demo_time: str, session_id: str) -> dict:
     body = client.post(
         "/api/chat",
         json={
-            "session_id": "s-demo",
+            "session_id": session_id,
             "message": "what's my next class?",
-            "context": {**PLAIN_CONTEXT, "demo_time": "2026-11-09T08:20:00+00:00"},
+            "context": {**PLAIN_CONTEXT, "demo_time": demo_time},
         },
     ).json()
-    next_class = body["ui"]["next_class"]
-    # 2026-11-09 is a Monday; the timetable has a 09:00 class in Lecture Theatre A.
-    assert next_class["start"].startswith("2026-11-09T09:00")
+    return body["ui"]["next_class"]
+
+
+def test_demo_clock_overrides_now():
+    """F10/D2: the demo time decides which class is "next"."""
+    # 2026-11-09 is the Monday of Nael's real timetable; first class 10:00 Theatre A.
+    next_class = next_class_at("2026-11-09T09:20:00+00:00", "s-demo")
+    assert next_class["start"].startswith("2026-11-09T10:00")
     assert next_class["room_id"] == "THEATRE_A"
+    assert "COMP15111" in next_class["title"]
+
+
+def test_the_next_class_rolls_over_through_the_day():
+    """Four real classes back to back: each demo time must pick the right one."""
+    expected = [
+        ("2026-11-09T09:20:00+00:00", "10:00", "THEATRE_A"),
+        ("2026-11-09T10:30:00+00:00", "11:00", "THEATRE_B"),  # during the 10:00 class
+        ("2026-11-09T12:00:00+00:00", "13:00", "THEATRE_A"),
+        ("2026-11-09T13:30:00+00:00", "14:00", "THEATRE_B"),  # during the 13:00 class
+    ]
+    for index, (demo_time, clock, room) in enumerate(expected):
+        found = next_class_at(demo_time, f"s-roll{index}")
+        assert found["start"].startswith(f"2026-11-09T{clock}"), (demo_time, found["start"])
+        assert found["room_id"] == room, (demo_time, found["room_id"])
+
+
+def test_a_student_running_late_still_gets_the_class_they_are_late_for():
+    """Five minutes after it starts, that is still the room they want. Half an hour
+    in, it is not — they need the next one."""
+    just_late = next_class_at("2026-11-09T10:05:00+00:00", "s-late")
+    assert just_late["start"].startswith("2026-11-09T10:00"), just_late["start"]
+
+    well_into_it = next_class_at("2026-11-09T10:30:00+00:00", "s-later")
+    assert well_into_it["start"].startswith("2026-11-09T11:00"), well_into_it["start"]
 
 
 def test_no_stairs_user_never_gets_a_stairs_step():
@@ -133,7 +162,7 @@ def test_stating_a_position_is_not_the_same_as_reaching_the_room():
 def test_the_demo_script_runs_without_any_api_keys():
     """PLAN §7 end to end on the D6 template path: every step must answer."""
     at_home = {**PLAIN_CONTEXT, "lat": 53.46, "lng": -2.23,
-               "demo_time": "2026-11-09T08:20:00+00:00"}
+               "demo_time": "2026-11-09T09:40:00+00:00"}
     at_building = {**at_home, "lat": BUILDING_LAT, "lng": BUILDING_LNG}
 
     step1 = post_chat("s-script", "what is my next class?", at_home)
@@ -207,7 +236,7 @@ def test_reaching_the_last_step_says_they_have_arrived():
 
 def test_tick_reminds_about_the_class_once_and_only_once():
     """F13: the app speaks up on its own, but does not nag."""
-    context = {**PLAIN_CONTEXT, "demo_time": "2026-11-09T08:30:00+00:00"}  # 30 min before
+    context = {**PLAIN_CONTEXT, "demo_time": "2026-11-09T09:30:00+00:00"}  # 30 min before
 
     first = client.post("/api/tick", json={"session_id": "s-tick", "context": context}).json()
     assert first["reply"] is not None
@@ -457,7 +486,7 @@ def test_a_route_that_uses_stairs_is_refused_whatever_the_wording():
 def test_timetable_minutes_until_is_relative_to_the_demo_clock():
     from datetime import datetime, timezone
 
-    now = datetime(2026, 11, 9, 8, 20, tzinfo=timezone.utc)
+    now = datetime(2026, 11, 9, 9, 20, tzinfo=timezone.utc)
     found = timetable.next_class(now)
     assert found is not None
     assert round(timetable.minutes_until(found, now)) == 40
