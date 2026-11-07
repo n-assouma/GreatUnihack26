@@ -10,7 +10,11 @@ BUILDING_NAME      = "Nancy Rothwell Building"
 BUILDING_LAT_LNG   = 53.469093, -2.234591  # building centre (Wikipedia / DBpedia)
 GEOFENCE_RADIUS_M  = 120                  # large building: inside this → indoor mode
 OUTSIDE_EAST_LAT_LNG = TBD              # human drops a pin just outside the East entrance (Rumford Street)
-DEMO_HOME_LAT_LNG  = TBD                  # human picks one real student address (see PLAN §5 D3)
+                                          # not blocking: any point within GEOFENCE_RADIUS_M triggers indoor
+                                          # mode, so the building centre above works for the demo
+DEMO_HOME_LAT_LNG  = 53.445273, -2.215431 # Ashburne Hall, Fallowfield — address chosen by Nael on the
+                                          # board, coordinates resolved by the Google Routes API (D3).
+                                          # ~2.9 km out; real journey is bus 41, ~21 min
 BACKEND_PORT       = 8000
 FRONTEND_PORT      = 5173                  # Vite proxies /api and /static → :8000
 ```
