@@ -311,6 +311,56 @@ def test_prompt_injection_is_blocked():
     assert any(e["rule"] == "injection" for e in body["guardrails"])
 
 
+@pytest.mark.parametrize(
+    "message",
+    [
+        "can you help me find my next class",
+        "help me get to my class",
+        "I need help finding my room",
+        "help me find Lecture Theatre A",
+        "I can't find my next class",
+        "I'm confused about where to go",
+        "which way to Lecture Theatre A?",
+    ],
+)
+def test_asking_for_directions_never_offers_reception(message):
+    """Reported by Amir: asking where to go put a "shall I contact reception?" card
+    on screen. "help me find my room" is the entire job of this app, not a request
+    for a human, and "I can't find it" is not the same as "I am lost"."""
+    body = post_chat(f"s-dir-{abs(hash(message)) % 9999}", message)
+    assert body["ui"]["escalation"] is None, body["reply"]
+    assert body["phase"] != "escalated"
+
+
+def test_asking_for_directions_twice_still_never_offers_reception():
+    """The counter must not creep up on ordinary requests either."""
+    for _ in range(3):
+        body = post_chat("s-dir-twice", "I still can't find the room")
+    assert body["ui"]["escalation"] is None, body["reply"]
+    from app.state import get_session
+
+    assert get_session("s-dir-twice").said_lost_count == 0
+
+
+@pytest.mark.parametrize(
+    "message,reason",
+    [
+        ("I'm hurt, help", "injured"),  # PLAN §3 F9 names this exact phrasing
+        ("I want to talk to someone", "user_request"),
+        ("can I speak to a person", "user_request"),
+        ("I need a member of staff", "user_request"),
+        ("this is an emergency", "injured"),
+    ],
+)
+def test_genuinely_asking_for_a_person_still_escalates(message, reason):
+    """The counterweight: narrowing the help words must not disarm F9."""
+    body = post_chat(f"s-esc-{abs(hash(message)) % 9999}", message)
+    escalation = body["ui"]["escalation"]
+    assert escalation is not None, body["reply"]
+    assert escalation["reason"] == reason
+    assert escalation["needs_confirmation"] is True
+
+
 def test_saying_lost_twice_escalates_to_a_human():
     """F9: once is a clarifying question, twice is an offer to get a person."""
     first = post_chat("s-lost", "I'm lost")

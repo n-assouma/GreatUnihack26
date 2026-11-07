@@ -41,24 +41,51 @@ _UNSAFE_WORDS = (
     "kill", "weapon", "knife", "bomb", "explosive", "hack into", "break into",
     "steal", "drugs", "hurt someone", "hurt myself", "kill myself", "suicide",
 )
+# Genuine distress: the student cannot work out where they are. These advance the
+# escalation counter, so the bar is "I am lost", not "I would like to be told where
+# something is" — a navigation app is asked the latter constantly.
 _LOST_WORDS = (
     "i'm lost", "im lost", "i am lost", "lost again", "still lost",
     "no idea where i am", "don't know where i am", "dont know where i am",
-    "i'm confused", "can't find", "cant find", "going in circles",
+    "going in circles", "walking in circles",
+)
+
+# Ordinary "please locate this for me". Gets a helpful re-ask and NEVER advances the
+# escalation counter: "I can't find the room" twice used to offer them reception.
+_CANT_FIND_WORDS = (
+    "can't find", "cant find", "cannot find", "i'm confused", "im confused",
+    "don't know where to go", "dont know where to go", "not sure where",
+    "can't see", "cant see", "which way",
 )
 _INJURY_WORDS = (
+    # "i'm hurt" needs to be here in its own right: PLAN §3 F9 names "I'm hurt, help"
+    # as a trigger, and "hurt my" alone requires an object, so that phrasing matched
+    # nothing at all and only escalated by accident.
+    "i'm hurt", "im hurt", "i am hurt", "i'm injured", "im injured",
     "hurt my", "injured", "i've fallen", "ive fallen", "i fell", "sprained",
     "twisted my", "broken", "my ankle", "my leg", "my knee", "on crutches",
     "in a wheelchair", "wheelchair", "can't walk", "cant walk", "can't use stairs",
     "cant use stairs", "can't do stairs", "cant do stairs", "bad knee",
 )
-_HELP_WORDS = (
-    "help me", "i need help", "emergency", "call security", "get security",
-    "ambulance", "a person", "someone to help", "a human", "member of staff",
+# Danger, or the emergency services. Escalates as an emergency.
+_EMERGENCY_WORDS = (
+    "emergency", "call security", "get security", "ambulance",
     # "999" alone is far too eager — it matches any room number or time containing
     # it (room 9Z.999 was escalating to security). Only a calling phrase counts.
-    "talk to someone", "call 999", "ring 999", "dial 999", "phone 999",
+    "call 999", "ring 999", "dial 999", "phone 999",
 )
+
+# Asking for a HUMAN to talk to. Escalates on its own, as a plain request.
+_PERSON_WORDS = (
+    "a person", "someone to help", "a human", "member of staff", "staff member",
+    "a warden", "talk to someone", "speak to someone", "talk to a person",
+    "speak to a person", "talk to staff", "speak to staff", "real person", "reception",
+)
+
+# Bare "help". On its own this is "help me find my room" — which is the whole job,
+# not a request for a human, and treating it as one put a reception card in front of
+# students who simply asked where to go. It only escalates alongside an injury.
+_BARE_HELP_WORDS = ("help", "help me", "i need help", "need help", "please help")
 _OFF_TOPIC_WORDS = (
     "weather", "pizza", "football", "bitcoin", "crypto", "write my essay",
     "do my homework", "tell me a joke", "who won", "stock price", "recipe",
@@ -146,7 +173,11 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
     events: list[GuardrailEvent] = []
 
     mentions_injury = _contains(text, _INJURY_WORDS)
-    asks_for_help = _contains(text, _HELP_WORDS)
+    in_danger = _contains(text, _EMERGENCY_WORDS)
+    asks_for_person = _contains(text, _PERSON_WORDS)
+    bare_help = _contains(text, _BARE_HELP_WORDS)
+    # "help" only means "fetch me a human" when something is actually wrong.
+    asks_for_help = asks_for_person or in_danger or (mentions_injury and bare_help)
 
     # An injury mentioned in passing is an accessibility need, not an emergency.
     # The demo relies on this: "I'm at the East entrance and I hurt my ankle"
@@ -172,15 +203,19 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
         events.append(_event("input", "unsafe", "blocked", "Unsafe request refused."))
         return InputVerdict(events, refusal=UNSAFE_REFUSAL)
 
-    # Hurt *and* asking for help, or an explicit request for a person -> a human (F9).
-    injured_and_stuck = mentions_injury and asks_for_help
-    if injured_and_stuck or "emergency" in text or "call security" in text:
+    # Danger, or hurt *and* asking for help -> a human (F9: "I'm hurt, help").
+    if in_danger or (mentions_injury and bare_help):
         events.append(
-            _event("input", "emergency", "escalated", "User may be hurt and needs a person.")
+            _event(
+                "input",
+                "emergency",
+                "escalated",
+                "User is in danger or hurt and asking for help.",
+            )
         )
         return InputVerdict(events, escalate="injured")
 
-    if _contains(text, _HELP_WORDS):
+    if asks_for_person:
         events.append(_event("input", "user_request", "escalated", "User asked for a person."))
         return InputVerdict(events, escalate="user_request")
 
@@ -199,6 +234,18 @@ def input_guardrail(message: str, state: SessionState) -> InputVerdict:
             return InputVerdict(events, escalate="lost")
         events.append(
             _event("input", "lost", "modified", "User is lost; asking where they are.")
+        )
+        return InputVerdict(events, reask_position=True)
+
+    # Ordinary "please locate this for me": help them, do not count it as distress.
+    if _contains(text, _CANT_FIND_WORDS):
+        events.append(
+            _event(
+                "input",
+                "needs_directions",
+                "modified",
+                "Student cannot find something; helping them rather than counting it as lost.",
+            )
         )
         return InputVerdict(events, reask_position=True)
 
@@ -285,7 +332,12 @@ def _escalation_refusal(state: SessionState, last_message: str, reason: str) -> 
     """
     text = last_message.lower()
     mentions_injury = _contains(text, _INJURY_WORDS)
-    asks_for_help = _contains(text, _HELP_WORDS) or "emergency" in text or "call security" in text
+    # Bare "help" is not a request for a person unless they are also hurt.
+    asks_for_help = (
+        _contains(text, _PERSON_WORDS)
+        or _contains(text, _EMERGENCY_WORDS)
+        or (mentions_injury and _contains(text, _BARE_HELP_WORDS))
+    )
 
     if asks_for_help:
         return None  # they asked for a person: always allow
