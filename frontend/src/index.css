@@ -338,3 +338,18 @@ input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px v
 .shell button, .shell .msg { -webkit-touch-callout: none; }
 .shell button { -webkit-user-select: none; user-select: none; }
 .speak-flash { outline: 3px solid var(--brand) !important; outline-offset: 2px; }
+
+/* Screen changes: the new screen slides in from the side it comes from; the tab icon pops */
+@keyframes screen-from-right { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: none; } }
+@keyframes screen-from-left { from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: none; } }
+.shell-body[data-slide="right"] > :not(.tabpane),
+.shell-body[data-slide="right"] > .tabpane:not([hidden]) > * { animation: screen-from-right .3s cubic-bezier(.2, .8, .2, 1) both; }
+.shell-body[data-slide="left"] > :not(.tabpane),
+.shell-body[data-slide="left"] > .tabpane:not([hidden]) > * { animation: screen-from-left .3s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes nav-pop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.nav-item[aria-current="page"] svg { animation: nav-pop .35s ease-out; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+.toast { animation: toast-in .25s ease-out; }
+
+/* Keep banners short so they never hide the map or plan underneath */
+.toast p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

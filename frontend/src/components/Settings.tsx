@@ -102,6 +102,11 @@ export function Settings({ settings, onChange, onDone, onboarding, sample }: Pro
       />
 
       <Suggestion
+        icon="map" title="Open the map and floor plan for me"
+        text="When I plan a bus route you go straight to the map, and when you reach the building you go to the floor plan."
+        value={settings.auto_switch} onChange={(v) => onChange({ auto_switch: v })}
+      />
+      <Suggestion
         icon="pin" title="Use my location"
         text="Needed to plan your journey from where you are. It is only used while you use the app, and your browser will ask you first."
         value={settings.use_location} onChange={(v) => onChange({ use_location: v })}

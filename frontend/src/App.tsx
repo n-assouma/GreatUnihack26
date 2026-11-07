@@ -17,7 +17,7 @@ import { useGeolocation } from './hooks/useGeolocation'
 import { useSpeech } from './hooks/useSpeech'
 import { indoorUpcoming, outdoorScript, stepScript } from './lib/script'
 import { PRESET_COORDS, toContext, useSettings } from './hooks/useSettings'
-import type { ChatResponse, IndoorRoute, OutdoorRoute } from './types'
+import type { ChatResponse, IndoorRoute, OutdoorRoute, Phase } from './types'
 
 // The map (and the Google Maps loader) is only downloaded when the Map tab is first opened.
 const MapPanel = lazy(() => import('./components/MapPanel').then((m) => ({ default: m.MapPanel })))
@@ -26,6 +26,9 @@ const MapPanel = lazy(() => import('./components/MapPanel').then((m) => ({ defau
 // so the step the student is on, the tab dots and the chat cards only react to a route that actually changed.
 const indoorKey = (r: IndoorRoute) => `${r.start_node}|${r.destination_id}|${r.accessible}|${r.steps.map((s) => s.instruction).join('/')}`
 const outdoorKey = (r: OutdoorRoute) => `${r.mode}|${r.polyline}`
+
+// Left-to-right order of the tabs, so a screen change can slide in from the side it is coming from.
+const TAB_ORDER: Tab[] = ['chat', 'map', 'plan', 'calendar', 'settings']
 
 function sessionId(): string {
   try {
@@ -49,6 +52,7 @@ function initialView(): View {
 export default function App() {
   const [view, setView] = useState<View>(initialView)
   const [tab, setTab] = useState<Tab>('chat')
+  const [slide, setSlide] = useState<'left' | 'right'>('right')
   const [settings, updateSettings] = useSettings()
   const [sid] = useState(sessionId)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -88,6 +92,16 @@ export default function App() {
   // apply() runs from timers, so read the current tab through a ref instead of a stale closure.
   const tabRef = useRef(tab)
   tabRef.current = tab
+  const phaseRef = useRef<Phase | null>(null)
+  const autoRef = useRef(settings.auto_switch)
+  autoRef.current = settings.auto_switch
+
+  // Every screen change goes through here so the new screen slides in from the correct side.
+  function go(next: Tab) {
+    if (next === tabRef.current) return
+    setSlide(TAB_ORDER.indexOf(next) > TAB_ORDER.indexOf(tabRef.current) ? 'right' : 'left')
+    setTab(next)
+  }
 
   const context = toContext(settings, step, compass.heading, position)
 
@@ -190,8 +204,24 @@ export default function App() {
     const spokenRequest = !fromTick && (askedByVoice.current || readNextReply.current)
     const bannerForVoice = !fromTick && askedByVoice.current && askedOutsideChat.current
     if (!fromTick) { askedByVoice.current = false; askedOutsideChat.current = false; readNextReply.current = false }
-    if ((fromTick || bannerForVoice) && res.reply) {
-      setToast({ id: Date.now(), text: res.reply, agent: res.agent, action: action && { label: action.tab === 'map' ? 'Open map' : 'Open floor plan', tab: action.tab } })
+    // Follow the journey: a new bus route opens the Map, arriving at the building opens the Floor plan.
+    const prevPhase = phaseRef.current
+    phaseRef.current = res.phase
+    const justArrived = inside && prevPhase !== null && prevPhase !== 'indoor' && prevPhase !== 'arrived'
+    const autoTab: Tab | null = !autoRef.current || res.phase === 'escalated' ? null
+      : inside && (i || justArrived) ? 'plan'
+      : !inside && o ? 'map'
+      : null
+    const from = tabRef.current
+    const leavingChat = autoTab !== null && autoTab !== from && from === 'chat'
+    if (autoTab) go(autoTab)
+    // The reply is not on screen when we moved away from Chat (or it came from a tick / the floating mic): show it as a banner.
+    if ((fromTick || bannerForVoice || leavingChat) && res.reply) {
+      const where = autoTab ?? from
+      const banner = leavingChat
+        ? { label: 'Back to chat', tab: 'chat' as Tab }
+        : action && action.tab !== where ? { label: action.tab === 'map' ? 'Open map' : 'Open floor plan', tab: action.tab as Tab } : undefined
+      setToast({ id: Date.now(), text: res.reply, agent: res.agent, action: banner })
     }
     if (res.reply && (voiceOnRef.current || spokenRequest)) {
       // Say more than the on-screen reply: the rest of the bus journey, or the next indoor steps.
@@ -263,7 +293,7 @@ export default function App() {
 
   return (
     <div className="shell" ref={shellRef}>
-      <Toast toast={toast} onDismiss={() => setToast(null)} onAction={setTab} />
+      <Toast toast={toast} onDismiss={() => setToast(null)} onAction={go} />
       {/* Shown above every screen so a tab switch can never hide a request for help. */}
       {escalation && (
         <div className="escalation" role="alert" aria-label="Contact reception">
@@ -279,26 +309,26 @@ export default function App() {
         </div>
       )}
 
-      <div className={`shell-body${tab !== 'chat' && speech.supported ? ' has-fab' : ''}`}>
+      <div className={`shell-body${tab !== 'chat' && speech.supported ? ' has-fab' : ''}`} data-slide={slide}>
         {tab === 'chat' && (
           <div className="app">
             <StatusBar demo={settings.demo_mode} nextClass={state?.ui.next_class ?? null} outdoor={outdoor} phase={phase} />
             {presetMissing && <p className="notice">Demo location has no coordinates yet, so no start point is sent. Pick Home or Real GPS in Settings.</p>}
             {inBuilding ? (
-              <button className="step-strip" onClick={() => setTab('plan')}>
+              <button className="step-strip" onClick={() => go('plan')}>
                 <Icon name="arrow" size={20} />
                 <span className="strip-text"><strong>Step {step + 1} of {indoor.steps.length}</strong> {indoor.steps[step]?.instruction}</span>
                 <span className="strip-go">Floor plan</span>
               </button>
             ) : outdoor ? (
-              <button className="step-strip" onClick={() => setTab('map')}>
+              <button className="step-strip" onClick={() => go('map')}>
                 <Icon name="bus" size={20} />
                 <span className="strip-text"><strong>Journey</strong> {outdoor.summary}</span>
                 <span className="strip-go">Map</span>
               </button>
             ) : null}
             <ChatPanel messages={messages} pending={pending} nextClass={state?.ui.next_class ?? null} suggestions={suggestions} onSend={send}
-              onOpenTab={setTab}
+              onOpenTab={go}
               voice={{ state: voiceState, onStop: speech.listening ? speech.stop : speech.cancel, transcript: speech.transcript }}
               mic={{ supported: speech.supported, listening: speech.listening, error: speech.error, onToggle: speech.listening ? speech.stop : speech.start }}
             />
@@ -325,7 +355,7 @@ export default function App() {
         )}
         {tab === 'settings' && (
           <Settings
-            settings={settings} onChange={updateSettings} onboarding={false} onDone={() => setTab('chat')}
+            settings={settings} onChange={updateSettings} onboarding={false} onDone={() => go('chat')}
             sample={{ onPlay: () => { void speech.speak('This is how I will sound. Turn left and walk about fifteen metres to the lifts.') }, engine: speech.engine }}
           />
         )}
@@ -336,7 +366,7 @@ export default function App() {
           onToggle={speech.listening ? speech.stop : speech.start} onStop={speech.listening ? speech.stop : speech.cancel}
         />
       )}
-      <NavBar tab={tab} onChange={setTab} badges={newRoute} />
+      <NavBar tab={tab} onChange={go} badges={newRoute} />
     </div>
   )
 }
