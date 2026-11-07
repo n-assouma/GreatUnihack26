@@ -18,13 +18,15 @@ interface Props {
   level?: number
   /** Shows a Stop button (stop listening, or cut off speech). */
   onStop?: () => void
+  /** What the person is saying right now; replaces the generic label while listening. */
+  transcript?: string
 }
 
 /**
  * Animated status for voice: pulsing rings while listening, a waveform while speaking, bouncing dots while thinking.
  * All motion is CSS. With reduced motion the animations stop but the text label still says what is happening.
  */
-export function VoiceIndicator({ state, level, onStop }: Props) {
+export function VoiceIndicator({ state, level, onStop, transcript }: Props) {
   if (state === 'idle') return null
   const driven = state === 'listening' && level !== undefined
 
@@ -51,7 +53,7 @@ export function VoiceIndicator({ state, level, onStop }: Props) {
         </span>
       )}
 
-      <span className="voice-label" role="status" aria-live="polite">{LABEL[state]}</span>
+      <span className="voice-label" role="status" aria-live="polite">{transcript || LABEL[state]}</span>
 
       {onStop && state !== 'thinking' && (
         <button className="voice-stop" onClick={onStop} aria-label={state === 'listening' ? 'Stop listening' : 'Stop speaking'}>

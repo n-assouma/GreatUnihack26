@@ -8,6 +8,8 @@ interface Props {
   onChange: (patch: Partial<S>) => void
   onDone: () => void   // only used while onboarding; the nav bar handles leaving Settings
   onboarding: boolean
+  /** Plays a sample sentence; `engine` is which voice answered last. Omitted while onboarding. */
+  sample?: { onPlay: () => void; engine: 'elevenlabs' | 'browser' | null }
 }
 
 /** A suggestion the user accepts or declines. */
@@ -72,7 +74,7 @@ const PRESETS: { id: LocationPreset; label: string }[] = [
   { id: 'east', label: 'Outside East entrance' },
 ]
 
-export function Settings({ settings, onChange, onDone, onboarding }: Props) {
+export function Settings({ settings, onChange, onDone, onboarding, sample }: Props) {
   return (
     <main className="page settings">
       <header className="page-head">
@@ -95,7 +97,7 @@ export function Settings({ settings, onChange, onDone, onboarding }: Props) {
       />
       <Suggestion
         icon="volume" title="Read replies aloud"
-        text="Hear each answer as well as see it."
+        text="Hear each answer and each new step out loud. You can also tap the microphone in the chat and speak instead of typing."
         value={settings.voice} onChange={(v) => onChange({ voice: v })}
       />
 
@@ -121,6 +123,15 @@ export function Settings({ settings, onChange, onDone, onboarding }: Props) {
       </div>
 
       <h2>Voice</h2>
+      {sample && (
+        <div className="card">
+          <strong>Test the voice</strong>
+          <p className="muted">
+            Plays a sentence out loud. {sample.engine === 'elevenlabs' ? 'Using the ElevenLabs voice.' : sample.engine === 'browser' ? 'Using your browser voice (the ElevenLabs voice is not available right now).' : ''}
+          </p>
+          <button className="choice" onClick={sample.onPlay}>Play a sample</button>
+        </div>
+      )}
       <VoicePreview />
 
       <h2>Display</h2>

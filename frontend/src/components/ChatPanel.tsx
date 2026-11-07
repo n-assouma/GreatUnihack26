@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AgentName, ClassInfo, GuardrailEvent } from '../types'
+import { Icon } from './Icon'
 import { VoiceIndicator, type VoiceState } from './VoiceIndicator'
 
 export interface ChatMessage {
@@ -19,10 +20,12 @@ interface Props {
   suggestions: string[]
   onSend: (text: string) => void
   /** Drives the voice animation. Pass the state from the speech hook once voice is wired. */
-  voice?: { state: VoiceState; level?: number; onStop?: () => void }
+  voice?: { state: VoiceState; level?: number; onStop?: () => void; transcript?: string }
+  /** Microphone input. Hidden when the browser has no speech recognition. */
+  mic?: { supported: boolean; listening: boolean; error: string | null; onToggle: () => void }
 }
 
-export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, voice }: Props) {
+export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, voice, mic }: Props) {
   const [text, setText] = useState('')
   const [showJump, setShowJump] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
@@ -88,7 +91,8 @@ export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, v
         </div>
         {showJump && <button className="jump" onClick={jumpToLatest}>Jump to latest</button>}
       </div>
-      {voice && <VoiceIndicator state={voice.state} level={voice.level} onStop={voice.onStop} />}
+      {voice && <VoiceIndicator state={voice.state} level={voice.level} onStop={voice.onStop} transcript={voice.transcript} />}
+      {mic?.error && <p className="notice" role="alert">{mic.error}</p>}
       {suggestions.length > 0 && (
         <div className="quick" role="group" aria-label="Suggested messages">
           {suggestions.map((s) => (
@@ -101,6 +105,14 @@ export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, v
           value={text} onChange={(e) => setText(e.target.value)} maxLength={MAX_INPUT_CHARS}
           aria-label="Message" placeholder="Ask Find My Way…" autoComplete="off"
         />
+        {mic?.supported && (
+          <button
+            type="button" className="mic-btn" aria-pressed={mic.listening}
+            aria-label={mic.listening ? 'Stop listening' : 'Speak your message'} onClick={mic.onToggle}
+          >
+            <Icon name="mic" size={20} />
+          </button>
+        )}
         <button type="submit" disabled={pending || !text.trim()}>Send</button>
       </form>
     </section>

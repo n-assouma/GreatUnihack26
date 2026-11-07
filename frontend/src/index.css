@@ -305,3 +305,8 @@ input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px v
 .steps-sheet .timeline { max-height: 34dvh; overflow-y: auto; padding: 0 14px 6px; }
 
 .escalation { margin: 8px 16px 0; }
+
+/* Microphone button next to Send */
+.mic-btn { flex: none; width: 44px; padding: 0; display: grid; place-items: center; border-radius: 12px; color: var(--brand); }
+.mic-btn[aria-pressed="true"] { background: var(--brand); color: var(--brand-fg); border-color: var(--brand); animation: voice-beat 1.1s ease-in-out infinite; }
+.voice-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; }

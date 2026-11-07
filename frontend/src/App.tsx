@@ -9,9 +9,11 @@ import { NavBar, type Tab } from './components/NavBar'
 import { Settings } from './components/Settings'
 import { StatusBar } from './components/StatusBar'
 import { Toast, type ToastMessage } from './components/Toast'
+import type { VoiceState } from './components/VoiceIndicator'
 import { Welcome } from './components/Welcome'
 import { useCompass } from './hooks/useCompass'
 import { useGeolocation } from './hooks/useGeolocation'
+import { useSpeech } from './hooks/useSpeech'
 import { PRESET_COORDS, toContext, useSettings } from './hooks/useSettings'
 import type { ChatResponse } from './types'
 
@@ -51,6 +53,14 @@ export default function App() {
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const compass = useCompass()
   const position = useGeolocation(settings.use_location)
+  // Speech: the mic sends what you said as a normal message, and replies are read aloud when voice is on.
+  const speech = useSpeech({ onFinal: (text) => { void send(text) } })
+  const voiceOn = settings.voice || settings.visual_impairment
+  const voiceOnRef = useRef(voiceOn)
+  voiceOnRef.current = voiceOn
+  const speakRef = useRef(speech.speak)
+  speakRef.current = speech.speak
+  const stepsForVoice = state?.ui.indoor_route?.steps
 
   // apply() runs from timers, so read the current tab through a ref instead of a stale closure.
   const tabRef = useRef(tab)
@@ -71,6 +81,13 @@ export default function App() {
     if (tab === 'map' || tab === 'plan') setNewRoute((n) => (n[tab] ? { ...n, [tab]: false } : n))
   }, [tab])
 
+  // Read each new indoor step aloud when the person moves between steps (the first step is in the reply).
+  useEffect(() => {
+    if (!voiceOnRef.current || step === 0) return
+    const instruction = stepsForVoice?.[step]?.instruction
+    if (instruction) void speakRef.current(instruction)
+  }, [step]) // eslint-disable-line react-hooks/exhaustive-deps
+
   function finishSetup() {
     try { localStorage.setItem('onboarded', '1') } catch { /* ignore */ }
     setView('main')
@@ -85,10 +102,12 @@ export default function App() {
     if (res.ui.outdoor_route && tabRef.current !== 'map') setNewRoute((n) => ({ ...n, map: true }))
     if (res.ui.indoor_route && tabRef.current !== 'plan') setNewRoute((n) => ({ ...n, plan: true }))
     if (fromTick && res.reply) setToast({ id: Date.now(), text: res.reply, agent: res.agent })
+    if (res.reply && voiceOnRef.current) void speakRef.current(res.reply)
     if (res.reply) setMessages((m) => [...m, { role: 'assistant' as const, text: res.reply!, agent: res.agent, guardrails: res.guardrails }].slice(-MAX_MESSAGES))
   }
 
   async function send(text: string) {
+    speech.cancel() // a new message cuts off whatever is being read out
     setMessages((m) => [...m, { role: 'user' as const, text }].slice(-MAX_MESSAGES))
     setPending(true)
     try {
@@ -128,6 +147,7 @@ export default function App() {
   const escalation = state?.ui.escalation ?? null
   const phase = state?.phase ?? 'idle'
   const inBuilding = (phase === 'indoor' || phase === 'arrived') && indoor
+  const voiceState: VoiceState = speech.listening ? 'listening' : speech.speaking ? 'speaking' : pending ? 'thinking' : 'idle'
   const onCompass = compass.status === 'on' || compass.status === 'waiting' ? compass.disable : compass.enable
 
   // One-tap messages that match where the student is in the journey (the demo script, PLAN §7).
@@ -177,7 +197,10 @@ export default function App() {
                 <span className="strip-go">Map</span>
               </button>
             ) : null}
-            <ChatPanel messages={messages} pending={pending} nextClass={state?.ui.next_class ?? null} suggestions={suggestions} onSend={send} />
+            <ChatPanel messages={messages} pending={pending} nextClass={state?.ui.next_class ?? null} suggestions={suggestions} onSend={send}
+              voice={{ state: voiceState, onStop: speech.listening ? speech.stop : speech.cancel, transcript: speech.transcript }}
+              mic={{ supported: speech.supported, listening: speech.listening, error: speech.error, onToggle: speech.listening ? speech.stop : speech.start }}
+            />
           </div>
         )}
 
@@ -200,7 +223,10 @@ export default function App() {
           <CalendarPage nextClass={state?.ui.next_class ?? null} demoTime={settings.demo_mode ? settings.demo_time : null} />
         )}
         {tab === 'settings' && (
-          <Settings settings={settings} onChange={updateSettings} onboarding={false} onDone={() => setTab('chat')} />
+          <Settings
+            settings={settings} onChange={updateSettings} onboarding={false} onDone={() => setTab('chat')}
+            sample={{ onPlay: () => { void speech.speak('This is how I will sound. Turn left and walk about fifteen metres to the lifts.') }, engine: speech.engine }}
+          />
         )}
       </div>
       <NavBar tab={tab} onChange={setTab} badges={newRoute} />
