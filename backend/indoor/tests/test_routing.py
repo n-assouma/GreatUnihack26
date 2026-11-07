@@ -135,3 +135,16 @@ def test_multi_floor_lift_is_one_step_and_pass_through_floors_not_drawn():
     lifts = [s for s in r["steps"] if s["via"] == "lift"]
     assert len(lifts) == 1 and lifts[0]["target_floor"] == 3
     assert [seg["floor"] for seg in r["segments"]] == [0, 3]
+
+
+@pytest.mark.parametrize("entrance", ENTRANCES)
+@pytest.mark.parametrize("accessible", [True, False])
+def test_theatre_b_and_floor_2_landmarks_reachable(entrance, accessible):
+    assert api.get_indoor_route(entrance, "THEATRE_B", accessible)["steps"][-1]["to_node"] == "THEATRE_B"
+    assert api.get_indoor_route(entrance, "f2_cafe_connect", accessible)["steps"][-1]["to_node"] == "f2_cafe_connect"
+    assert api.room_exists("THEATRE_B")
+
+
+def test_locate_floor_2_landmarks():
+    assert api.locate("I'm at the connect cafe")["node_id"] == "f2_cafe_connect"
+    assert api.locate("near the computer cluster")["node_id"] == "f2_computer_cluster"
