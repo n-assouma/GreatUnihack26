@@ -52,13 +52,14 @@ export function useSettings() {
   return [settings, update] as const
 }
 
-// DEMO_HOME_LAT_LNG: Ashburne Hall, Whitworth Lane, Fallowfield (address chosen by the team on the board, D3;
-// coordinates looked up from OpenStreetMap). OUTSIDE_EAST_LAT_LNG is still TBD in docs/CONTRACTS.md §1:
-// until a human drops that pin the preset sends no coordinates (we do not invent any).
+// Both values come from docs/CONTRACTS.md §1.
+// DEMO_HOME_LAT_LNG: Ashburne Hall, Fallowfield (the team's chosen address).
+// OUTSIDE_EAST_LAT_LNG is still TBD there; the contract says BUILDING_LAT_LNG works for it, because anything within
+// GEOFENCE_RADIUS_M (120 m) of the building triggers indoor mode.
 export const PRESET_COORDS: Record<LocationPreset, { lat: number; lng: number } | null> = {
   gps: null,
-  home: { lat: 53.44606, lng: -2.21565 },
-  east: null,
+  home: { lat: 53.445273, lng: -2.215431 },
+  east: { lat: 53.469093, lng: -2.234591 },
 }
 
 export function toContext(

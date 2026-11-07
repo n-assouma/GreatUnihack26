@@ -16,6 +16,8 @@ const PATHS = {
   settings: <><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></>,
   contrast: <><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 010 18z" /></>,
   text: <path d="M4 7V5h16v2M12 5v14M9 19h6" />,
+  mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3" /></>,
+  stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
   arrow: <path d="M12 19V5M6 11l6-6 6 6" />,
 } satisfies Record<string, ReactNode>
 

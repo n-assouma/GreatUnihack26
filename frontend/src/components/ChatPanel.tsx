@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AgentName, ClassInfo, GuardrailEvent } from '../types'
+import { VoiceIndicator, type VoiceState } from './VoiceIndicator'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -17,9 +18,11 @@ interface Props {
   nextClass: ClassInfo | null
   suggestions: string[]
   onSend: (text: string) => void
+  /** Drives the voice animation. Pass the state from the speech hook once voice is wired. */
+  voice?: { state: VoiceState; level?: number; onStop?: () => void }
 }
 
-export function ChatPanel({ messages, pending, nextClass, suggestions, onSend }: Props) {
+export function ChatPanel({ messages, pending, nextClass, suggestions, onSend, voice }: Props) {
   const [text, setText] = useState('')
   const [showJump, setShowJump] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
@@ -85,6 +88,7 @@ export function ChatPanel({ messages, pending, nextClass, suggestions, onSend }:
         </div>
         {showJump && <button className="jump" onClick={jumpToLatest}>Jump to latest</button>}
       </div>
+      {voice && <VoiceIndicator state={voice.state} level={voice.level} onStop={voice.onStop} />}
       {suggestions.length > 0 && (
         <div className="quick" role="group" aria-label="Suggested messages">
           {suggestions.map((s) => (

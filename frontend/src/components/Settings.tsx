@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Icon, type IconName } from './Icon'
+import { VoiceIndicator, type VoiceState } from './VoiceIndicator'
 import type { LocationPreset, Settings as S } from '../hooks/useSettings'
 
 interface Props {
@@ -22,6 +24,37 @@ function Suggestion(props: {
           <button aria-pressed={props.value} onClick={() => props.onChange(true)}>Yes, please</button>
           <button aria-pressed={!props.value} onClick={() => props.onChange(false)}>No thanks</button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/** Lets you see the voice animations before real voice is wired in. The mic level here is simulated. */
+function VoicePreview() {
+  const [state, setState] = useState<VoiceState>('idle')
+  const [level, setLevel] = useState(0.3)
+
+  useEffect(() => {
+    if (state !== 'listening') return
+    const id = setInterval(() => setLevel(0.15 + Math.random() * 0.85), 110)
+    return () => clearInterval(id)
+  }, [state])
+
+  const options: { id: VoiceState; label: string }[] = [
+    { id: 'idle', label: 'Off' }, { id: 'listening', label: 'Listening' },
+    { id: 'thinking', label: 'Thinking' }, { id: 'speaking', label: 'Speaking' },
+  ]
+  return (
+    <div className="card">
+      <strong>Voice animations</strong>
+      <p className="muted">A preview of how the app looks while it listens to you or speaks. The microphone level is simulated here.</p>
+      <div className="choice-row" role="group" aria-label="Preview state">
+        {options.map((o) => (
+          <button key={o.id} className="choice" aria-pressed={state === o.id} onClick={() => setState(o.id)}>{o.label}</button>
+        ))}
+      </div>
+      <div className="voice-preview">
+        <VoiceIndicator state={state} level={state === 'listening' ? level : undefined} onStop={() => setState('idle')} />
       </div>
     </div>
   )
@@ -87,6 +120,9 @@ export function Settings({ settings, onChange, onDone, onboarding }: Props) {
         </div>
       </div>
 
+      <h2>Voice</h2>
+      <VoicePreview />
+
       <h2>Display</h2>
       <Suggestion
         icon="contrast" title="High contrast"
@@ -125,7 +161,7 @@ export function Settings({ settings, onChange, onDone, onboarding }: Props) {
                 </button>
               ))}
             </div>
-            <p className="muted small">Home is Ashburne Hall. The East entrance pin is still to be chosen by the team, so that preset sends no position yet.</p>
+            <p className="muted small">Home is Ashburne Hall. The East entrance preset uses the building centre, which is close enough to switch to indoor mode.</p>
           </div>
         )}
       </div>
