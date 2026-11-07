@@ -1,3 +1,4 @@
+import { Icon } from './Icon'
 import type { IndoorRoute, IndoorStep } from '../types'
 
 const ARROW: Record<IndoorStep['turn'], { rot: number; label: string }> = {
@@ -22,7 +23,7 @@ export function StepCard({ route, index, onChange }: Props) {
   const last = route.steps.length - 1
   return (
     <section className="step-card" aria-label="Current step">
-      <span className="arrow" style={{ transform: `rotate(${a.rot}deg)` }} aria-hidden="true">↑</span>
+      <span className="arrow" style={{ transform: `rotate(${a.rot}deg)` }} aria-hidden="true"><Icon name="arrow" size={34} /></span>
       <div>
         <strong>{a.label}</strong>
         <p>{step.instruction}</p>
