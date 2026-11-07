@@ -1,6 +1,6 @@
 {
   "_source": "Nael's real University of Manchester timetable for Monday 9 November 2026, from his screenshot (PLAN §5 D1). Relayed by A3 on the board; typed in by A2.",
-  "_demo_substitution": "Real course codes, types and times are unchanged. The real rooms are in the Kilburn Building; they are replaced here with Nancy Rothwell rooms because only that building has indoor guidance (PLAN §5 D1). THEATRE_A and THEATRE_B are both on floor 1 and routable from all 3 entrances. Nothing else is altered.",
+  "_demo_substitution": "Real course codes, types and times are unchanged. The real rooms are in the Kilburn Building; they are replaced here with Nancy Rothwell rooms because only that building has indoor guidance (PLAN §5 D1). Nothing else is altered. Room choice is Keenan's (board, 16:09): the 10:00 and 14:00 classes use THEATRE_A/THEATRE_B on floor 1, the 11:00 and 13:00 use GA.019/GA.035 on the ground floor. All four are in the building graph and routable accessibly from all 3 entrances.",
   "_weekday": "0 = Monday ... 6 = Sunday (Python convention)",
   "_timezone": "Europe/London (UTC+00:00 in November)",
   "_fields": "`course` is the speakable unit code (the reply is read aloud); `ref` keeps the full timetable string from the screenshot for fidelity and is never spoken.",
@@ -24,8 +24,8 @@
       "start": "11:00",
       "end": "12:00",
       "building_id": "nancy_rothwell",
-      "room_id": "THEATRE_B",
-      "room_label": "Lecture Theatre B"
+      "room_id": "GA.019",
+      "room_label": "Room GA.019"
     },
     {
       "course": "COMP11120",
@@ -35,8 +35,8 @@
       "start": "13:00",
       "end": "14:00",
       "building_id": "nancy_rothwell",
-      "room_id": "THEATRE_A",
-      "room_label": "Lecture Theatre A"
+      "room_id": "GA.035",
+      "room_label": "Room GA.035"
     },
     {
       "course": "COMP10120",
