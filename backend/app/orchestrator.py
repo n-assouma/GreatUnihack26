@@ -125,6 +125,10 @@ def run_turn(state: SessionState, message: str) -> TurnResult:
         for call in result.tool_calls:
             target = agents.handoff_target(call.name)
             if target:
+                # Worth a log line: a model-initiated handoff is the multi-agent
+                # system doing its job, and otherwise it leaves no trace anywhere
+                # except the agent name on the final reply.
+                print(f"[handoff] {state.active_agent} -> {target} ({state.session_id})")
                 state.active_agent = target
                 messages.append(
                     {

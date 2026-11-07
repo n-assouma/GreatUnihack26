@@ -108,7 +108,11 @@ def test_no_stairs_user_never_gets_a_stairs_step():
     assert route is not None, body
     assert route["accessible"] is True
     assert all(step.get("via") != "stairs" for step in route["steps"])
-    assert "stair" not in (body["reply"] or "").lower()
+    # Mentioning stairs to reassure ("this route avoids stairs") is fine and good;
+    # instructing them is what must never happen.
+    from app.guardrails import _STAIRS_INSTRUCTION
+
+    assert not _STAIRS_INSTRUCTION.search(body["reply"] or "")
 
 
 def test_injury_in_passing_forces_accessible_routing():
@@ -480,7 +484,11 @@ def test_moving_on_from_an_escalation_card_does_not_strand_the_session():
     assert body["ui"]["escalation"] is None
 
 
-def test_tts_returns_503_without_a_key():
+def test_tts_returns_503_without_a_key(monkeypatch):
+    """Must not depend on whether the developer running the suite happens to have a
+    key in .env — it asserts the no-key fallback, so it clears the key itself."""
+    monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+    monkeypatch.delenv("ELEVENLABS_VOICE_ID", raising=False)
     response = client.post("/api/tts", json={"text": "hello"})
     assert response.status_code == 503
 
