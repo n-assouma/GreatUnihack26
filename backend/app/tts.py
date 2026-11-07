@@ -17,8 +17,37 @@ MAX_CHARS = 1000
 _tts_ever_failed = False
 
 
+KEY_PREFIX = "sk_"
+_warned_about_key = False
+
+
 def configured() -> bool:
-    return bool(os.getenv("ELEVENLABS_API_KEY") and os.getenv("ELEVENLABS_VOICE_ID"))
+    """True only if a key that *can* work is present.
+
+    ElevenLabs keys start with `sk_` and are shown only when created or rotated;
+    the dashboard also shows an API key *ID*, which looks like a credential but is
+    rejected with 400 `api_key_id_used_as_api_key`. We were handed the id once, and
+    a non-empty-means-configured check reported tts as "real" in /api/health right
+    up until the first call failed. Checking the shape turns that into a startup
+    warning instead of a surprise mid-demo.
+    """
+    global _warned_about_key
+
+    key = os.getenv("ELEVENLABS_API_KEY", "").strip()
+    voice = os.getenv("ELEVENLABS_VOICE_ID", "").strip()
+    if not key or not voice:
+        return False
+    if not key.startswith(KEY_PREFIX):
+        if not _warned_about_key:
+            _warned_about_key = True
+            print(
+                "[tts] ELEVENLABS_API_KEY does not start with 'sk_', so it cannot work "
+                "(this is what an API key ID looks like, not an API key). Create or "
+                "rotate a key in ElevenLabs and paste the sk_... value. Falling back "
+                "to the browser voice."
+            )
+        return False
+    return True
 
 
 def status() -> str:
